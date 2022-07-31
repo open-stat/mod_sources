@@ -49,24 +49,6 @@ class Extract extends \Common {
 
         $pages = [];
 
-
-        foreach ($addresses as $key => $address) {
-
-            $domain    = parse_url($address)['host'] ?? 'none';
-            $tmp_dir   = "{$this->config->temp}/news/{$domain}";
-            $file_name = "{$tmp_dir}/" . md5($address) . '.html';
-
-            if (file_exists($file_name)) {
-                $pages[] = [
-                    'url'     => $address,
-                    'content' => file_get_contents($file_name),
-                ];
-
-                unset($addresses[$key]);
-            }
-        }
-
-
         if ( ! empty($addresses)) {
             $responses = $this->modProxy->request('get', $addresses, [
                 'request' => [

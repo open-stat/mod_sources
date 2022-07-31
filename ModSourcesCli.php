@@ -12,7 +12,7 @@ require_once "classes/autoload.php";
 class ModSourcesCli extends Common {
 
     /**
-     * Получение актуальных статей
+     * Получение информации
      * @throws \Exception
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
@@ -20,7 +20,8 @@ class ModSourcesCli extends Common {
 
         $configs = (new Sources\Index\Model())->getConfigs();
 
-        if ($configs) {$extract   = new Sources\Etl\Extract();
+        if ($configs) {
+            $extract   = new Sources\Etl\Extract();
             $transform = new Sources\Etl\Transform();
             $loader    = new Sources\Etl\Loader();
 
@@ -29,13 +30,12 @@ class ModSourcesCli extends Common {
                 try {
                     if ( ! $source?->start_url ||
                          ! $source?->selectors ||
-                         ! $source?->selectors?->list ||
-                         ! $source?->selectors?->page
+                         ! $source?->selectors?->list
                     ) {
                         continue;
                     }
 
-                    if ( ! in_array($name, ['auto.onliner.by', 'tech.onliner.by'])) {
+                    if ( ! in_array($name, ['kv.by'])) {
                         continue;
                     }
 
@@ -46,7 +46,7 @@ class ModSourcesCli extends Common {
                     $list_content = $extract->loadList($source->start_url);
 
                     if (empty($list_content)) {
-                        throw new \Exception('На ресурсе %s не удалось получить содержимое страницы');
+                        throw new \Exception(sprintf('На ресурсе %s не удалось получить содержимое страницы', $source->start_url));
                     }
 
                     $pages_list = $transform->parseList($list_content, $source->selectors->list->toArray(), [
@@ -71,34 +71,74 @@ class ModSourcesCli extends Common {
 
 
                     $pages_item = $extract->loadPages($pages_url);
-                    $pages      = [];
-
 
                     foreach ($pages_item as $page_item) {
-                        $loader->saveSourceContent($page_item['url'], $page_item['content']);
+                        $loader->saveSourceContent($source_id, $page_item['url'], $page_item['content']);
+                    }
 
-                        foreach ($pages_list as $page_list) {
+                } catch (\Exception $e) {
+                    echo $e->getMessage() . PHP_EOL;
+                }
+            }
+        }
+    }
 
-                            if ($page_item['url'] == $page_list['url']) {
-                                $page = $transform->parsePage($page_item['content'], $source->selectors->page->toArray(), [
-                                    'date_format' => $source->selectors->page?->date_format ?: $source->date_format
-                                ]);
 
-                                $pages[] = $transform->mergePage($page_list, $page);
+    /**
+     * Обработка информации
+     * @throws \Exception
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function parseSources() {
+
+        $configs = (new Sources\Index\Model())->getConfigs();
+
+        if ($configs) {
+            $transform = new Sources\Etl\Transform();
+            $loader    = new Sources\Etl\Loader();
+
+            $this->modSources->dataSourcesContentsRaw->refreshStatusRows();
+
+            foreach ($configs as $name => $source) {
+
+                try {
+                    if ( ! $source?->selectors || ! $source?->selectors?->page) {
+                        continue;
+                    }
+
+                    $pages_raw    = $this->modSources->dataSourcesContentsRaw->getRowsPendingByDomain($name);
+                    $count_errors = 0;
+
+                    foreach ($pages_raw as $page_raw) {
+                        try {
+                            $page_raw->status = 'process';
+                            $page_raw->save();
+
+                            $page = $transform->parsePage($page_raw->content, $source->selectors->page->toArray(), [
+                                'date_format' => $source->selectors->page?->date_format ?: $source->date_format
+                            ]);
+
+                            $page['url'] = $page_raw->url;
+
+                            if ($source->page && $source->page->clear) {
+                                $page = $transform->clearPage($page, $source->page->clear->toArray());
+                            }
+
+                            $loader->savePage($page_raw->source_id, $page);
+
+                            $page_raw->status = 'complete';
+                            $page_raw->save();
+
+                        } catch (\Exception $e) {
+                            echo $e->getMessage() . PHP_EOL;
+                            $count_errors++;
+
+                            if ($count_errors >= 3) {
                                 break;
                             }
                         }
                     }
 
-                    foreach ($pages as $key => $page) {
-                        if ($source->page && $source->page->clear) {
-                            $pages[$key] = $transform->clearPage($page, $source->page->clear->toArray());
-                        }
-                    }
-
-                    foreach ($pages as $page) {
-                        $loader->savePage($source_id, $page);
-                    }
 
                 } catch (\Exception $e) {
                     echo $e->getMessage() . PHP_EOL;

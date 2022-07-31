@@ -4,9 +4,9 @@
 /**
  *
  */
-class SourcesPagesMedia extends \Zend_Db_Table_Abstract {
+class SourcesPagesTags extends \Zend_Db_Table_Abstract {
 
-	protected $_name = 'mod_sources_pages_media';
+	protected $_name = 'mod_sources_pages_tags';
 
 
     /**

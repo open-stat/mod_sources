@@ -36,4 +36,15 @@ class SourcesPagesReferences extends \Zend_Db_Table_Abstract {
 
         return $row ? (int)$row['count'] : 0;
     }
+
+
+    /**
+     * @param int $page_id
+     * @return void
+     */
+    public function deleteByPage(int $page_id): void {
+
+        $where = $this->_db->quoteInto('page_id = ?', $page_id);
+        $this->delete($where);
+    }
 }

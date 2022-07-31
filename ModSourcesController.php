@@ -9,11 +9,14 @@ require_once 'classes/autoload.php';
 
 
 /**
- * @property \Sources                 $dataSources
- * @property \SourcesPages            $dataSourcesPages
- * @property \SourcesPagesContents    $dataSourcesPagesContents
- * @property \SourcesPagesMedia       $dataSourcesPagesMedia
- * @property \SourcesPagesReferences  $dataSourcesPagesReferences
+ * @property \Sources                $dataSources
+ * @property \SourcesContentsRaw     $dataSourcesContentsRaw
+ * @property \SourcesPages           $dataSourcesPages
+ * @property \SourcesPagesContents   $dataSourcesPagesContents
+ * @property \SourcesPagesMedia      $dataSourcesPagesMedia
+ * @property \SourcesPagesReferences $dataSourcesPagesReferences
+ * @property \SourcesPagesTags       $dataSourcesPagesTags
+ * @property \SourcesTags            $dataSourcesTags
  */
 class ModSourcesController extends Common {
 

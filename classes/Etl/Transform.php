@@ -134,7 +134,7 @@ class Transform {
                         }
 
                         if ( ! empty($rules['region'])) {
-                            $page['region'] = $this->getRegions($item, $rules['region']);
+                            $page['region'] = $this->getTags($item, $rules['region']);
                         }
 
                         if ( ! empty($rule['tags'])) {
@@ -211,7 +211,7 @@ class Transform {
             }
 
             if ( ! empty($rules['region'])) {
-                $page['region'] = $this->getRegions($dom, $rules['region']);
+                $page['region'] = $this->getTags($dom, $rules['region']);
             }
 
             if ( ! empty($rules['tags'])) {
@@ -231,13 +231,15 @@ class Transform {
             }
 
             if ( ! empty($rules['content'])) {
-                $items = $dom->find($rules['content']);
+                $items       = $dom->find($rules['content']);
+                $content_raw = '';
+
                 foreach ($items as $item) {
-                    $page['content_raw'] .= $item ? trim($item->innerHtml) : '';
+                    $content_raw .= $item ? trim($item->innerHtml) : '';
                 }
 
-                if ($page['content_raw']) {
-                    $page['content'] = $this->getContent($page['content_raw']);
+                if ($content_raw) {
+                    $page['content'] = $this->getContent($content_raw);
                 }
 
                 $page['media']      = $this->getMedia($dom, $rules['content']);
@@ -452,37 +454,6 @@ class Transform {
         }
 
         return $page;
-    }
-
-
-    /**
-     * @param \PHPHtmlParser\Dom $dom
-     * @param                    $rule
-     * @return array
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
-     */
-    private function getRegions(\PHPHtmlParser\Dom $dom, $rule): array {
-
-        $items   = $dom->find($rule);
-        $regions = [];
-
-        foreach ($items as $item) {
-            $region_text = $item ? trim($item->text) : '';
-
-            foreach (explode(',', $region_text) as $region) {
-                $region = mb_strtolower($region);
-                $region = preg_replace('~&[A-z#0-9]+;~', ' ', $region);
-                $region = preg_replace('~[ ]{2,}~', ' ', $region);
-                $region = trim($region);
-
-                if ( ! empty($region) && array_search($region, $regions) === false) {
-                    $regions[] = trim($region);
-                }
-            }
-        }
-
-        return $regions;
     }
 
 
