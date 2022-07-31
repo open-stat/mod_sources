@@ -34,9 +34,6 @@ class View extends \Common {
         $table->setQuery("
             SELECT sp.id,
                    sp.title,
-                   sp.categories,
-                   sp.tags,
-                   sp.region,
                    sp.url,
                    sp.source_domain,
                    sp.source_url,
@@ -48,6 +45,7 @@ class View extends \Common {
             FROM mod_sources_pages AS sp
                 JOIN mod_sources AS s ON sp.source_id = s.id
                 JOIN mod_sources_pages_contents AS spc ON sp.id = spc.page_id 
+                LEFT JOIN mod_sources_pages_tags AS spt ON sp.id = spt.page_id  
             ORDER BY sp.date_publish DESC
         ");
 
@@ -57,19 +55,13 @@ class View extends \Common {
         $table->addSearch($this->_("Источник"),         "s.domain",        $table::SEARCH_TEXT);
         $table->addSearch($this->_("Дата публикации"),  "sp.date_publish", $table::SEARCH_DATE);
         $table->addSearch($this->_("Заголовок"),        "sp.title",        $table::SEARCH_TEXT);
-        $table->addSearch($this->_("Теги"),             "sp.tags",         $table::SEARCH_TEXT);
-        $table->addSearch($this->_("Регион"),           "sp.region",       $table::SEARCH_TEXT);
-        $table->addSearch($this->_("Категории"),        "sp.categories",   $table::SEARCH_TEXT);
         $table->addSearch($this->_("Просмотров"),       "sp.count_views",  $table::SEARCH_TEXT);
 
 
         $table->addColumn($this->_("Источник"),        'domain',        $table::COLUMN_TEXT, 120);
         $table->addColumn($this->_("Дата публикации"), 'date_publish',  $table::COLUMN_DATETIME, 130);
         $table->addColumn($this->_("Заголовок"),       'title',         $table::COLUMN_TEXT);
-        $table->addColumn($this->_("Теги"),            'tags',          $table::COLUMN_TEXT, 200);
-        $table->addColumn($this->_("Регион"),          'region',        $table::COLUMN_TEXT, 100);
-        $table->addColumn($this->_("Категории"),       'categories',    $table::COLUMN_TEXT, 120);
-        $table->addColumn($this->_("Автор"),           'source_author', $table::COLUMN_NUMBER, 100)->hide();
+        $table->addColumn($this->_("Автор"),           'source_author', $table::COLUMN_NUMBER, 160);
         $table->addColumn($this->_("Просмотров"),      'count_views',   $table::COLUMN_NUMBER, 100);
         $table->addColumn($this->_("Ссылка"),          'url',           $table::COLUMN_HTML, 1)->sorting(false);
 
@@ -102,15 +94,35 @@ class View extends \Common {
 
         $page_content    = $this->modSources->dataSourcesPagesContents->getRowByPageId($page->id);
         $page_references = $this->modSources->dataSourcesPagesReferences->getRowsByPageId($page->id);
+        $page_tags       = $this->modSources->dataSourcesPagesTags->getRowsByPageId($page->id);
+
+        $tags_id    = [];
+        $tags       = [];
+        $categories = [];
+        $regions    = [];
+
+        foreach ($page_tags as $page_tag) {
+            $tags_id[] = $page_tag->tag_id;
+        }
+
+        $page_tags = $this->modSources->dataSourcesTags->find($tags_id);
+
+        foreach ($page_tags as $page_tag) {
+            switch ($page_tag->type) {
+                case 'tag':      $tags[]       = $page_tag->tag; break;
+                case 'category': $categories[] = $page_tag->tag; break;
+                case 'region':   $regions[]    = $page_tag->tag; break;
+            }
+        }
 
         $edit->SQL = [
             [
                 'id'            => $page?->id,
                 'title'         => $page?->title,
                 'date_publish'  => $page?->date_publish,
-                'categories'    => $page?->categories,
-                'tags'          => $page?->tags,
-                'region'        => $page?->region,
+                'categories'    => null,
+                'tags'          => null,
+                'region'        => null,
                 'url'           => $page?->url,
                 'source_url'    => $page?->source_url,
                 'source_author' => $page?->source_author,
@@ -129,10 +141,10 @@ class View extends \Common {
 
         $edit->addControl('Заголовок',              "TEXT",       'style="width:600px;"');
         $edit->addControl('Дата публикации',        "DATETIME2");
-        $edit->addControl('Категории',              "TEXT",       'style="width:600px;"');
-        $edit->addControl('Теги',                   "TEXT",       'style="width:600px;"');
-        $edit->addControl('Регион',                 "TEXT",       'style="width:600px;"');
-        $edit->addControl('Ссылка',                 "TEXT",       'style="width:600px;"');
+        $edit->addControl('Категории',              "CUSTOM",     $categories ? implode(', ', $categories) : '');
+        $edit->addControl('Теги',                   "CUSTOM",     $tags ? implode(', ', $tags) : '');
+        $edit->addControl('Регион',                 "CUSTOM",     $regions ? implode(', ', $regions) : '');
+        $edit->addControl('Ссылка',                 "LINK",       'style="width:600px;"');
         $edit->addControl('Источник новости',       "TEXT",       'style="width:300px;"');
         $edit->addControl('Автор',                  "TEXT",       'style="width:300px;"');
         $edit->addControl('Количество просмотров',  "TEXT",       'style="width:300px;"');
