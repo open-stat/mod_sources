@@ -44,12 +44,11 @@ class View extends \Common {
             
             FROM mod_sources_pages AS sp
                 JOIN mod_sources AS s ON sp.source_id = s.id
-                JOIN mod_sources_pages_contents AS spc ON sp.id = spc.page_id 
-                LEFT JOIN mod_sources_pages_tags AS spt ON sp.id = spt.page_id  
+                JOIN mod_sources_pages_contents AS spc ON sp.id = spc.page_id   
             ORDER BY sp.date_publish DESC
         ");
 
-        $table->addFilter("CONCAT_WS('|', sp.title, sp.categories, sp.tags, sp.region)", $table::FILTER_TEXT, $this->_("Заголовок, теги, категории, регион"));
+        $table->addFilter("CONCAT_WS('|', sp.title, s.domain)", $table::FILTER_TEXT, $this->_("Заголовок, источник"));
         $table->addFilter("spc.content", $table::FILTER_TEXT, $this->_("Содержимое"));
 
         $table->addSearch($this->_("Источник"),         "s.domain",        $table::SEARCH_TEXT);

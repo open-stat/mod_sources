@@ -35,7 +35,7 @@ class ModSourcesCli extends Common {
                         continue;
                     }
 
-                    if ( ! in_array($name, ['kv.by'])) {
+                    if ( ! in_array($name, ['mfa.gov.by'])) {
                         continue;
                     }
 
@@ -73,6 +73,10 @@ class ModSourcesCli extends Common {
                     $pages_item = $extract->loadPages($pages_url);
 
                     foreach ($pages_item as $page_item) {
+                        if (isset($source->encoding) && $source->encoding) {
+                            $page_item['content'] = iconv($source->encoding, 'utf-8', $page_item['content']);
+                        }
+
                         $loader->saveSourceContent($source_id, $page_item['url'], $page_item['content']);
                     }
 
@@ -103,6 +107,10 @@ class ModSourcesCli extends Common {
 
                 try {
                     if ( ! $source?->selectors || ! $source?->selectors?->page) {
+                        continue;
+                    }
+
+                    if ( ! in_array($name, ['mfa.gov.by'])) {
                         continue;
                     }
 

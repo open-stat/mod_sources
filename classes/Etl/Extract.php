@@ -18,20 +18,24 @@ class Extract extends \Common {
             'request' => [
                 'connection'         => 10,
                 'connection_timeout' => 10,
+                'verify'             => false,
             ],
             'level_anonymity' => ['elite', /*'anonymous', 'non_anonymous'*/ ],
             'max_try'         => 5,
-            'limit'           => 5
+            'limit'           => 5,
             //'debug' => 'print',
         ]);
 
         $response = current($responses);
 
-
         if ($response['status'] != 'success' ||
             $response['http_code'] != '200' ||
             empty($response['content'])
         ) {
+            echo '<pre>';
+            print_r($responses);
+            echo '</pre>';
+
             return '';
         }
 
@@ -54,6 +58,7 @@ class Extract extends \Common {
                 'request' => [
                     'connection'         => 10,
                     'connection_timeout' => 10,
+                    'verify'             => false,
                 ],
                 'level_anonymity' => ['elite', /*'anonymous', 'non_anonymous'*/ ],
                 'max_try'         => 5,

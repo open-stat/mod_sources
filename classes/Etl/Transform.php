@@ -103,14 +103,14 @@ class Transform {
                             'date_publish' => '',
                         ];
 
-                        if ( ! empty($rule['url'])) {
-                            $item_url = $item->find($rule['url']);
-                            $url      = $item_url && $item_url[0] ? trim($item_url[0]->getAttribute('href') ?? '') : '';
 
-                            if (empty($url)) {
-                                continue;
-                            }
+                        $item_url = ! empty($rule['url'])
+                            ? $item->find($rule['url'])[0]
+                            : $item;
 
+                        $url = $item_url ? trim($item_url->getAttribute('href') ?? '') : '';
+
+                        if ( ! empty($url)) {
                             if ( ! $this->getDomain($url) && ! empty($options['url'])) {
                                 $domain = $this->getDomain($options['url']);
                                 $scheme = $this->getScheme($options['url']);
@@ -178,14 +178,16 @@ class Transform {
      */
     public function parsePage(string $content, array $rules, array $options = []): array {
 
+        $parser_options = new \PHPHtmlParser\Options();
+        $parser_options->setEnforceEncoding('utf8');
+
         $dom = new \PHPHtmlParser\Dom();
-        $dom->loadStr($content);
+        $dom->loadStr($content, $parser_options);
 
         try {
             $page = [
                 'title'         => '',
                 'content'       => '',
-                'content_raw'   => '',
                 'source_domain' => '',
                 'source_url'    => '',
                 'author'        => '',
@@ -282,7 +284,7 @@ class Transform {
 
 
             if ($rules['date_publish']) {
-                $page['date_publish'] = $this->getDatePublish($content, $rules['date_publish'], $options['date_format'] ?? '');
+                $page['date_publish'] = $this->getDatePublish($dom, $rules['date_publish'], $options['date_format'] ?? '');
             }
 
 
@@ -321,6 +323,7 @@ class Transform {
                     }
 
                     $page['content'] = preg_replace($content_cut, '', $page['content']);
+                    $page['content'] = trim($page['content']);
                 }
             }
         }
@@ -336,6 +339,7 @@ class Transform {
                 preg_match($clear_rules['author'], $page['author'], $match);
 
                 $page['author'] = ! empty($match['author']) ? $match['author'] : '';
+                $page['author'] = trim($page['author']);
             }
         }
 
@@ -489,9 +493,9 @@ class Transform {
 
 
     /**
-     * @param string $content
-     * @param string $rule
-     * @param string $date_format
+     * @param \PHPHtmlParser\Dom $dom
+     * @param string             $rule
+     * @param string             $date_format
      * @return string
      * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
      * @throws \PHPHtmlParser\Exceptions\CircularException
@@ -500,17 +504,17 @@ class Transform {
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      * @throws \PHPHtmlParser\Exceptions\StrictException
      */
-    private function getDatePublish(string $content, string $rule, string $date_format = ''): string {
-
-        $dom = new \PHPHtmlParser\Dom();
-        $dom->loadStr($content);
+    private function getDatePublish(\PHPHtmlParser\Dom $dom, string $rule, string $date_format = ''): string {
 
         $item = $dom->find($rule);
 
         $date_publish = '';
 
         if ($item && $item[0]) {
-            $date_publish_text = trim($item[0]->text);
+            $date_publish_text = strip_tags($item && $item[0])
+                ? (trim($item[0]->innerHtml) ?: trim($item[0]->text))
+                : '';
+            $date_publish_text = strip_tags($date_publish_text);
 
             if ($date_publish_text) {
                 if (empty($date_format)) {
@@ -533,6 +537,12 @@ class Transform {
                         );
                     }
 
+                    if (isset($match['current_year']) &&
+                        empty($match['year'])
+                    ) {
+                        $match['year'] = date('Y');
+                    }
+
                     if ( ! empty($match['year']) &&
                          ! empty($match['month']) &&
                          ! empty($match['day'])
@@ -546,6 +556,8 @@ class Transform {
                         try {
                             $date_publish = (new \DateTime($date_publish))->format('Y-m-d H:i:s');
                         } catch (\Exception $e) {
+                            echo $e->getMessage() . PHP_EOL;
+                            $date_publish = '';
                             // ignore
                         }
                     }
@@ -617,6 +629,8 @@ class Transform {
         $author = strip_tags($item && $item[0])
             ? (trim($item[0]->innerHtml) ?: trim($item[0]->text))
             : '';
+
+        $author = strip_tags($author);
         $author = htmlspecialchars_decode($author);
         $author = str_replace('&nbsp', ' ', $author);
         $author = preg_replace('~&[A-z#0-9]+;~', ' ', $author);

@@ -74,7 +74,7 @@ CREATE TABLE `mod_sources_contents_raw` (
     KEY `url` (`url`),
     KEY `status` (`status`),
     CONSTRAINT `fk1_mod_sources_contents_raw` FOREIGN KEY (`source_id`) REFERENCES `mod_sources` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=MyIsam DEFAULT CHARSET=utf8mb3;
+) ENGINE=MyIsam DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_pages_media` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,

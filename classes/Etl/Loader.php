@@ -38,6 +38,7 @@ class Loader extends \Common {
 
         $content_row = $this->modSources->dataSourcesContentsRaw->getRowByUrl($url);
 
+        // todo возможно следует добавлять версию 2..n
         if (empty($content_row)) {
             $content_row = $this->modSources->dataSourcesContentsRaw->createRow([
                 'source_id' => $source_id,
@@ -57,10 +58,7 @@ class Loader extends \Common {
      */
     public function savePage(int $source_id, array $page): bool {
 
-        if (empty($page['url']) ||
-            empty($page['title']) ||
-            empty($page['content'])
-        ) {
+        if (empty($page['url']) || empty($page['title'])) {
             return false;
         }
 
