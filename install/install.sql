@@ -63,18 +63,18 @@ CREATE TABLE `mod_sources_pages_contents` (
 CREATE TABLE `mod_sources_contents_raw` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `source_id` int unsigned NOT NULL,
-    `domain` varchar(255) NULL,
-    `status` enum('pending', 'process', 'complete') NOT NULL DEFAULT 'pending',
+    `domain` varchar(255) DEFAULT NULL,
+    `status` enum('pending','process','complete') NOT NULL DEFAULT 'pending',
     `url` varchar(255) NOT NULL,
     `content` longtext NOT NULL,
+    `options` json DEFAULT NULL,
     `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `source_id` (`source_id`),
     KEY `url` (`url`),
     KEY `status` (`status`),
-    CONSTRAINT `fk1_mod_sources_contents_raw` FOREIGN KEY (`source_id`) REFERENCES `mod_sources` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=MyIsam DEFAULT CHARSET=utf8mb4;
+    KEY `source_id` (`source_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `mod_sources_pages_media` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,

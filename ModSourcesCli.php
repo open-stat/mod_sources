@@ -21,7 +21,6 @@ class ModSourcesCli extends Common {
         $configs = (new Sources\Index\Model())->getConfigs();
 
         if ($configs) {
-            $extract   = new Sources\Etl\Extract();
             $transform = new Sources\Etl\Transform();
             $loader    = new Sources\Etl\Loader();
 
@@ -43,22 +42,11 @@ class ModSourcesCli extends Common {
                     $source_id   = $loader->saveSource($source_data);
 
 
-                    $list_content = $extract->loadList($source->start_url);
+                    $site = new Sources\Index\Site($source);
 
-                    if (empty($list_content)) {
-                        throw new \Exception(sprintf('На ресурсе %s не удалось получить содержимое страницы', $source->start_url));
-                    }
+                    $pages_list = $site->loadList();
+                    $pages_url  = [];
 
-                    $pages_list = $transform->parseList($list_content, $source->selectors->list->toArray(), [
-                        'date_format' => $source->date_format,
-                        'url'         => $source->start_url,
-                    ]);
-
-                    if (empty($pages_list)) {
-                        throw new \Exception(sprintf('На ресурсе %s не найдены страницы. Проверьте правила поиска', $source->start_url));
-                    }
-
-                    $pages_url = [];
                     foreach ($pages_list as $page_list) {
                         if ( ! empty($page_list['url'])) {
                             $pages_url[] = $page_list['url'];
@@ -69,15 +57,22 @@ class ModSourcesCli extends Common {
                         throw new \Exception(sprintf('На ресурсе %s не найдены страницы ведущие по какому-либо адресу. Проверьте правила поиска', $source->start_url));
                     }
 
-
-                    $pages_item = $extract->loadPages($pages_url);
+                    $pages_item = $site->loadPages($pages_url);
 
                     foreach ($pages_item as $page_item) {
-                        if (isset($source->encoding) && $source->encoding) {
-                            $page_item['content'] = iconv($source->encoding, 'utf-8', $page_item['content']);
+                        $options = [];
+
+                        foreach ($pages_list as $page_list) {
+                            if ($page_list['url'] == $page_item['url']) {
+                                $options['count_views']  = $page_list['count_views'];
+                                $options['date_publish'] = $page_list['date_publish'];
+                                $options['tags']         = $page_list['tags'];
+                                $options['categories']   = $page_list['categories'];
+                                break;
+                            }
                         }
 
-                        $loader->saveSourceContent($source_id, $page_item['url'], $page_item['content']);
+                        $loader->saveSourceContent($source_id, $page_item['url'], $page_item['content'], $options);
                     }
 
                 } catch (\Exception $e) {
@@ -98,8 +93,7 @@ class ModSourcesCli extends Common {
         $configs = (new Sources\Index\Model())->getConfigs();
 
         if ($configs) {
-            $transform = new Sources\Etl\Transform();
-            $loader    = new Sources\Etl\Loader();
+            $loader = new Sources\Etl\Loader();
 
             $this->modSources->dataSourcesContentsRaw->refreshStatusRows();
 
@@ -114,6 +108,7 @@ class ModSourcesCli extends Common {
                         continue;
                     }
 
+                    $site         = new Sources\Index\Site($source);
                     $pages_raw    = $this->modSources->dataSourcesContentsRaw->getRowsPendingByDomain($name);
                     $count_errors = 0;
 
@@ -122,15 +117,7 @@ class ModSourcesCli extends Common {
                             $page_raw->status = 'process';
                             $page_raw->save();
 
-                            $page = $transform->parsePage($page_raw->content, $source->selectors->page->toArray(), [
-                                'date_format' => $source->selectors->page?->date_format ?: $source->date_format
-                            ]);
-
-                            $page['url'] = $page_raw->url;
-
-                            if ($source->page && $source->page->clear) {
-                                $page = $transform->clearPage($page, $source->page->clear->toArray());
-                            }
+                            $page = $site->parsePage($page_raw->url, $page_raw->content);
 
                             $loader->savePage($page_raw->source_id, $page);
 

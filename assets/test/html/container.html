@@ -1,0 +1,33 @@
+
+<div class="source-test-site">
+
+    <button type="button" onclick="SourceTest.site.test()" class="btn btn-warning btn-sm" id="test-button-start">
+        Запуск
+    </button>
+
+    <div class="checkbox">
+        <label>
+            <input type="checkbox" id="option-all-pages"> Загружать все страницы
+        </label>
+    </div>
+    <hr>
+
+    <div class="row">
+        <div class="col-md-6 col-sm-12">
+            <h4 class="text-muted">Правила импорта</h4>
+            <textarea name="rules" id="site-rules" class="form-control"></textarea>
+        </div>
+        <div class="col-md-6 col-sm-12">
+            <h4 class="text-muted">Результат</h4>
+            <div class="panel-group" id="container-launches"></div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    SourceTest.site.init({
+        src : '[MOD_SRC]',
+        fieldRulesId : 'site-rules',
+    });
+</script>

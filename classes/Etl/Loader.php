@@ -32,9 +32,10 @@ class Loader extends \Common {
      * @param int    $source_id
      * @param string $url
      * @param string $content
+     * @param array  $options
      * @return void
      */
-    public function saveSourceContent(int $source_id, string $url, string $content): void {
+    public function saveSourceContent(int $source_id, string $url, string $content, array $options = []): void {
 
         $content_row = $this->modSources->dataSourcesContentsRaw->getRowByUrl($url);
 
@@ -45,6 +46,7 @@ class Loader extends \Common {
                 'domain'    => parse_url($url)['host'] ?? null,
                 'url'       => $url,
                 'content'   => $content,
+                'options'   => json_encode($options),
             ]);
             $content_row->save();
         }

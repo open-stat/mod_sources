@@ -1,0 +1,12 @@
+
+.source-test-site textarea {
+    min-width: 100%;
+    max-width: 100%;
+    min-height: 600px;
+    font-family: lucida console;
+    white-space: pre;
+}
+.source-test-site .checkbox {
+    display: inline-block;
+    margin-left: 15px;
+}

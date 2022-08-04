@@ -1,5 +1,5 @@
 <?php
-namespace Core2\Mod\Sources\Index;
+namespace Core2\Mod\Sources\Test;
 use Core2\Classes\Table;
 
 
@@ -154,5 +154,16 @@ class View extends \Common {
         $edit->save("xajax_savePage(xajax.getFormValues(this.id))");
 
         return $edit;
+    }
+
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getSiteContainer(): string {
+
+        $tpl = file_get_contents(__DIR__ . '/../../assets/test/html/container.html');
+        return str_replace('[MOD_SRC]', $this->getModuleSrc('sources'), $tpl);
     }
 }

@@ -72,4 +72,75 @@ class ModSourcesController extends Common {
         $panel->setContent(implode('', $content));
         return $panel->render();
     }
+
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function action_test(): string {
+
+        if ( ! empty($_GET['data'])) {
+            try {
+                switch ($_GET['data']) {
+                    case 'test_site':
+                        if (empty($_POST['rules'])) {
+                            throw new Exception($this->_('Не переданы правила для запуска'));
+                        }
+
+                        $model = new Sources\Test\Model();
+
+                        ob_start();
+                        $time_start = microtime(true);
+                        $body       = $model->testSite($_POST['rules'], $_POST['options'] ?? []);
+                        $time_end   = microtime(true);
+                        $body      .= ob_get_clean();
+
+                        return json_encode([
+                            'status' => 'success',
+                            'time'   => round($time_end - $time_start, 3),
+                            'mem'    => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+                            'body'   => $body,
+                        ]);
+                        break;
+                }
+
+            } catch (Exception $e) {
+                return json_encode([
+                    'status'        => 'error',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $base_url = 'index.php?module=sources&action=test';
+        $view     = new Sources\Test\View();
+        $panel    = new Panel('tab');
+        $content  = [];
+
+        try {
+            $panel->addTab('Сайты',    'sites',    $base_url);
+            $panel->addTab('Telegram', 'telegram', $base_url);
+            $panel->addTab('Youtube',  'youtube',  $base_url);
+
+            ob_start();
+            $this->printJsModule('sources', '/assets/test/js/source.test.js');
+            $this->printCssModule('sources', '/assets/test/css/source.test.css');
+            $content[] = ob_get_clean();
+
+            switch ($panel->getActiveTab()) {
+                case 'sites':    $content[] = $view->getSiteContainer(); break;
+                case 'telegram': break;
+                case 'youtube':  break;
+            }
+
+        } catch (\Exception $e) {
+            $content[] = Alert::danger($e->getMessage(), 'Ошибка');
+        }
+
+        $panel->setContent(implode('', $content));
+        return $panel->render();
+    }
+
+
 }

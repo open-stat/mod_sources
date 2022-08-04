@@ -98,9 +98,9 @@ class Transform {
                         $page = [
                             'url'          => '',
                             'count_views'  => '',
+                            'date_publish' => '',
                             'tags'         => [],
                             'categories'   => [],
-                            'date_publish' => '',
                         ];
 
 
@@ -146,7 +146,7 @@ class Transform {
                         }
 
                         if ( ! empty($rule['date_publish'])) {
-                            $page['date_publish'] = $this->getDatePublish($content, $rule['date_publish'], $rule['date_format'] ?? $options['date_format'] ?? '');
+                            $page['date_publish'] = $this->getDatePublish($item, $rule['date_publish'], $rule['date_format'] ?? $options['date_format'] ?? '');
                         }
 
                         $pages[] = $page;
@@ -188,14 +188,14 @@ class Transform {
             $page = [
                 'title'         => '',
                 'content'       => '',
+                'date_publish'  => '',
+                'count_views'   => '',
+                'author'        => '',
                 'source_domain' => '',
                 'source_url'    => '',
-                'author'        => '',
                 'region'        => [],
                 'categories'    => [],
                 'tags'          => [],
-                'count_views'   => '',
-                'date_publish'  => '',
                 'media'         => [],
                 'references'    => [],
             ];
@@ -493,7 +493,7 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
+     * @param \PHPHtmlParser\Dom|PHPHtmlParser\Dom\Node\HtmlNode $dom
      * @param string             $rule
      * @param string             $date_format
      * @return string
@@ -504,7 +504,7 @@ class Transform {
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      * @throws \PHPHtmlParser\Exceptions\StrictException
      */
-    private function getDatePublish(\PHPHtmlParser\Dom $dom, string $rule, string $date_format = ''): string {
+    private function getDatePublish(\PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom, string $rule, string $date_format = ''): string {
 
         $item = $dom->find($rule);
 
@@ -530,11 +530,7 @@ class Transform {
                 if (preg_match($date_format, $date_publish_text, $match)) {
 
                     if ( ! empty($match['month_ru'])) {
-                        $match['month'] = str_replace(
-                            array_keys($this->months_ru),
-                            array_values($this->months_ru),
-                            $match['month_ru']
-                        );
+                        $match['month'] = $this->months_ru[$match['month_ru']] ?? '';
                     }
 
                     if (isset($match['current_year']) &&
@@ -556,7 +552,12 @@ class Transform {
                         try {
                             $date_publish = (new \DateTime($date_publish))->format('Y-m-d H:i:s');
                         } catch (\Exception $e) {
-                            echo $e->getMessage() . PHP_EOL;
+                            echo '<pre>';
+                            print_r($match);
+                            echo "Исходный текст: {$date_publish_text}" . PHP_EOL;
+                            echo "Найденная дата: {$date_publish}" . PHP_EOL;
+                            echo "Ошибка: {$e->getMessage()}" . PHP_EOL;
+                            echo '</pre>';
                             $date_publish = '';
                             // ignore
                         }
