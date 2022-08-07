@@ -31,25 +31,32 @@ class Model extends \Common {
         $config = new \Zend_Config_Ini($file_name);
         $site   = new Sources\Index\Site($config->source);
 
-        $pages_list  = $site->loadList();
-        $pages_url   = [];
-        $pages_count = count($pages_list);
+        // загрузка одной страницы
+        if ( ! empty($options['option_page_url'])) {
+            $pages_url = [$options['option_page_url']];
 
-        foreach ($pages_list as $page_list) {
-            if ( ! empty($page_list['url'])) {
-                $pages_url[] = $page_list['url'];
+        // Получение вписка страниц
+        } else {
+            $pages_list  = $site->loadList();
+            $pages_url   = [];
+            $pages_count = count($pages_list);
+
+            foreach ($pages_list as $page_list) {
+                if ( ! empty($page_list['url'])) {
+                    $pages_url[] = $page_list['url'];
+                }
             }
+
+            if (empty($options['load_all_pages'])) {
+                $pages_url = [current($pages_url)];
+            }
+
+            echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Найденные страницы - {$pages_count}</h4>";
+            echo '<pre style="max-width: 100%">';
+            print_r($pages_list);
+            echo '</pre>';
         }
 
-        if (empty($options['load_all_pages'])) {
-            $pages_url = [current($pages_url)];
-        }
-
-
-        echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Найденные страницы - {$pages_count}</h4>";
-        echo '<pre style="max-width: 100%">';
-        print_r($pages_list);
-        echo '</pre>';
 
         $pages       = $site->loadPages($pages_url);
         $pages_count = count($pages);

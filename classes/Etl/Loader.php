@@ -175,7 +175,7 @@ class Loader extends \Common {
                             'page_id'     => $page_row->id,
                             'url'         => $media['url'],
                             'type'        => $media['type'],
-                            'description' => $media['description'] ?? '',
+                            'description' => mb_substr($media['description'] ?? '', 0, 250),
                         ]);
                         $page_media_row->save();
                     }

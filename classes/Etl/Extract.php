@@ -32,10 +32,7 @@ class Extract extends \Common {
             $response['http_code'] != '200' ||
             empty($response['content'])
         ) {
-            echo '<pre>';
-            print_r($responses);
-            echo '</pre>';
-
+            echo $responses['error_message'] ?? '';
             return '';
         }
 

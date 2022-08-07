@@ -54,6 +54,7 @@ class View extends \Common {
         $table->addSearch($this->_("Дата публикации"),  "sp.date_publish", $table::SEARCH_DATE);
         $table->addSearch($this->_("Заголовок"),        "sp.title",        $table::SEARCH_TEXT);
         $table->addSearch($this->_("Просмотров"),       "sp.count_views",  $table::SEARCH_TEXT);
+        $table->addSearch($this->_("Ссылка"),           "sp.url",          $table::SEARCH_TEXT);
 
 
         $table->addColumn($this->_("Источник"),        'domain',        $table::COLUMN_TEXT, 120);

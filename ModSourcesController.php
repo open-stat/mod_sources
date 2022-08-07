@@ -38,12 +38,12 @@ class ModSourcesController extends Common {
                 if (empty($page)) {
                     throw new Exception('Указанная страница не найдена');
                 }
-
+                $source = $this->dataSources->find($page->source_id)->current();
                 $date_publish = $page->date_publish
                     ? (new \DateTime($page->date_publish))->format('d.m.Y H:i:s')
                     : 'не указано';
 
-                $description = "Дата публикации: {$date_publish} / Просмотров: {$page->count_views} / Автор: {$page->source_author}";
+                $description = "{$source->domain} / {$date_publish}";
 
 
                 $panel->setTitle($page->title, $description, $base_url);

@@ -462,13 +462,13 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
+     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
      * @param                    $rule
      * @return array
      * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getTags(\PHPHtmlParser\Dom $dom, $rule): array {
+    private function getTags($dom, $rule): array {
 
         $items = $dom->find($rule);
         $tags  = [];
@@ -493,7 +493,7 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom|PHPHtmlParser\Dom\Node\HtmlNode $dom
+     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
      * @param string             $rule
      * @param string             $date_format
      * @return string
@@ -504,7 +504,7 @@ class Transform {
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      * @throws \PHPHtmlParser\Exceptions\StrictException
      */
-    private function getDatePublish(\PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom, string $rule, string $date_format = ''): string {
+    private function getDatePublish($dom, string $rule, string $date_format = ''): string {
 
         $item = $dom->find($rule);
 
@@ -585,13 +585,13 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
+     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
      * @param string             $rule
      * @return string
      * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getTitle(\PHPHtmlParser\Dom $dom, string $rule): string {
+    private function getTitle($dom, string $rule): string {
 
         $item = $dom->find($rule);
         $title = $item && $item[0] ? trim($item[0]->text) : '';
@@ -602,13 +602,13 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
+     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
      * @param string             $rule
      * @return string
      * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getCountView(\PHPHtmlParser\Dom $dom, string $rule): string {
+    private function getCountView($dom, string $rule): string {
 
         $item_count_views = $dom->find($rule);
         $count_views = $item_count_views && $item_count_views[0] ? trim($item_count_views[0]->text) : '';
