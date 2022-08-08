@@ -81,6 +81,8 @@ class Transform {
 
         $pages = [];
 
+        ini_set("mbstring.regex_retry_limit", "10000000");
+
         $dom = new \PHPHtmlParser\Dom();
         $dom->loadStr($content);
 
@@ -97,6 +99,7 @@ class Transform {
                     try {
                         $page = [
                             'url'          => '',
+                            'title'        => '',
                             'count_views'  => '',
                             'date_publish' => '',
                             'tags'         => [],
@@ -125,16 +128,16 @@ class Transform {
                             }
                         }
 
-                        if ( ! empty($rules['title'])) {
-                            $page['title'] = $this->getTitle($item, $rules['title']);
+                        if ( ! empty($rule['title'])) {
+                            $page['title'] = $this->getTitle($item, $rule['title']);
                         }
 
-                        if ( ! empty($rules['count_views'])) {
-                            $page['count_views'] = $this->getCountView($item, $rules['count_views']);
+                        if ( ! empty($rule['count_views'])) {
+                            $page['count_views'] = $this->getCountView($item, $rule['count_views']);
                         }
 
-                        if ( ! empty($rules['region'])) {
-                            $page['region'] = $this->getTags($item, $rules['region']);
+                        if ( ! empty($rule['region'])) {
+                            $page['region'] = $this->getTags($item, $rule['region']);
                         }
 
                         if ( ! empty($rule['tags'])) {
@@ -344,6 +347,35 @@ class Transform {
         }
 
 
+        if ( ! empty($page['region']) && ! empty($clear_rules['region'])) {
+
+            @preg_match($clear_rules['region'], '');
+            if (preg_last_error() != PREG_NO_ERROR) {
+                echo "Error author regular expr: {$clear_rules['region']}". PHP_EOL;
+
+            } else {
+                $regions = [];
+
+                foreach ($page['region'] as $region) {
+                    preg_match($clear_rules['region'], $region, $match);
+
+                    $region = ! empty($match['region']) ? $match['region'] : '';
+                    $region = trim($region);
+
+                    if ($region) {
+                        $regions_explode = preg_split('~(,| )~', $region);
+
+                        foreach ($regions_explode as $region) {
+                            $regions[] = trim($region);
+                        }
+                    }
+                }
+
+                $page['region'] = $regions;
+            }
+        }
+
+
         if ( ! empty($page['references']) &&
              ! empty($clear_rules['references']) &&
              ! empty($clear_rules['references']['reject']) &&
@@ -474,7 +506,8 @@ class Transform {
         $tags  = [];
 
         foreach ($items as $item) {
-            $tags_text = $item ? trim($item->text) : '';
+            $tags_text = trim($item->innerHtml) ?: trim($item->text);
+            $tags_text = strip_tags($tags_text);
 
             foreach (explode(',', $tags_text) as $tag) {
                 $tag = mb_strtolower($tag);
@@ -511,56 +544,68 @@ class Transform {
         $date_publish = '';
 
         if ($item && $item[0]) {
-            $date_publish_text = strip_tags($item && $item[0])
-                ? (trim($item[0]->innerHtml) ?: trim($item[0]->text))
-                : '';
-            $date_publish_text = strip_tags($date_publish_text);
+            $attr_datetime = $item[0]->getAttribute('datetime');
 
-            if ($date_publish_text) {
-                if (empty($date_format)) {
-                    $date_format = '~(?<day>[\d]{1,2})\.(?<month>[\d]{1,2})\.(?<year>[\d]{4})\s+(?<hour>[\d]{1,2}):(?<min>[\d]{1,2})(?:\:(?<sec>[\d]{1,2})|)~';
-                } else {
-                    @preg_match($date_format, '');
-                    if (preg_last_error() != PREG_NO_ERROR) {
-                        echo "Error regular: {$date_format}". PHP_EOL;
-                        return '';
+            if ($attr_datetime && preg_match('~(\d{4}-\d{2}-\d{2}.\d{2}:\d{2}:\d{2})~', $attr_datetime, $match)) {
+                $date_publish_text = $match[1] ?? '';
+                $date_format       = '~(?<year>[\d]{4})\-(?<month>[\d]{2})\-(?<day>[\d]{2}).(?<hour>[\d]{1,2}):(?<min>[\d]{1,2})(?:\:(?<sec>[\d]{1,2})|)~';
+
+            } else {
+                $date_publish_text = $item && $item[0]
+                    ? (trim($item[0]->innerHtml) ?: trim($item[0]->text))
+                    : '';
+                $date_publish_text = strip_tags($date_publish_text);
+
+                if ($date_publish_text) {
+                    if (empty($date_format)) {
+                        $date_format = '~(?<day>[\d]{1,2})\.(?<month>[\d]{1,2})\.(?<year>[\d]{4})\s+(?<hour>[\d]{1,2}):(?<min>[\d]{1,2})(?:\:(?<sec>[\d]{1,2})|)~';
+                    } else {
+                        @preg_match($date_format, '');
+                        if (preg_last_error() != PREG_NO_ERROR) {
+                            echo "Error regular: {$date_format}". PHP_EOL;
+                            return '';
+                        }
                     }
                 }
+            }
 
-                if (preg_match($date_format, $date_publish_text, $match)) {
+            if ($date_format &&
+                $date_publish_text &&
+                preg_match($date_format, $date_publish_text, $match)
+            ) {
 
-                    if ( ! empty($match['month_ru'])) {
-                        $match['month'] = $this->months_ru[$match['month_ru']] ?? '';
-                    }
+                if ( ! empty($match['month_ru'])) {
+                    $match['month'] = $this->months_ru[$match['month_ru']] ?? '';
+                }
 
-                    if (isset($match['current_year']) &&
-                        empty($match['year'])
-                    ) {
-                        $match['year'] = date('Y');
-                    }
+                if (isset($match['current_year']) &&
+                    empty($match['year'])
+                ) {
+                    $match['year'] = date('Y');
+                }
 
-                    if ( ! empty($match['year']) &&
-                         ! empty($match['month']) &&
-                         ! empty($match['day'])
-                    ) {
-                        $hour = empty($match['hour']) ? '00' : $match['hour'];
-                        $min  = empty($match['min']) ? '00' : $match['min'];
-                        $sec  = empty($match['sec']) ? '00' : $match['sec'];
+                if ( ! empty($match['year']) &&
+                    ! empty($match['month']) &&
+                    ! empty($match['day'])
+                ) {
+                    $hour = empty($match['hour']) ? '00' : $match['hour'];
+                    $min  = empty($match['min']) ? '00' : $match['min'];
+                    $sec  = empty($match['sec']) ? '00' : $match['sec'];
 
-                        $date_publish = "{$match['year']}-{$match['month']}-{$match['day']} {$hour}:{$min}:{$sec}";
+                    $date_publish = "{$match['year']}-{$match['month']}-{$match['day']} {$hour}:{$min}:{$sec}";
+                }
 
-                        try {
-                            $date_publish = (new \DateTime($date_publish))->format('Y-m-d H:i:s');
-                        } catch (\Exception $e) {
-                            echo '<pre>';
-                            print_r($match);
-                            echo "Исходный текст: {$date_publish_text}" . PHP_EOL;
-                            echo "Найденная дата: {$date_publish}" . PHP_EOL;
-                            echo "Ошибка: {$e->getMessage()}" . PHP_EOL;
-                            echo '</pre>';
-                            $date_publish = '';
-                            // ignore
-                        }
+                if ($date_publish) {
+                    try {
+                        $date_publish = (new \DateTime($date_publish))->format('Y-m-d H:i:s');
+                    } catch (\Exception $e) {
+                        echo '<pre>';
+                        echo "Исходный текст: {$date_publish_text}" . PHP_EOL;
+                        echo "Найденная дата: {$date_publish}" . PHP_EOL;
+                        echo "Ошибка: {$e->getMessage()}" . PHP_EOL;
+                        echo '</pre>';
+
+                        $date_publish = '';
                     }
                 }
             }
@@ -594,7 +639,11 @@ class Transform {
     private function getTitle($dom, string $rule): string {
 
         $item = $dom->find($rule);
-        $title = $item && $item[0] ? trim($item[0]->text) : '';
+        $title = $item && $item[0]
+            ? trim($item[0]->innerHtml) ?: trim($item[0]->text)
+            : '';
+
+        $title = strip_tags($title);
         $title = preg_replace('~&[A-z#0-9]+;~', ' ', $title);
 
         return preg_replace('~[ ]{2,}~', ' ', $title);
@@ -686,9 +735,19 @@ class Transform {
         $content_links = $dom->find($rule . ' a');
 
         if ( ! empty($content_links)) {
+            $scheme = $source_url ? $this->getScheme($source_url) : 'http';
+
             foreach ($content_links as $content_link) {
                 $url = $content_link?->getAttribute('href') ?? '';
                 $url = str_replace('&amp;', '&', $url);
+
+                if (preg_match('~\.(jpg|jpeg|png|gif|webp|mp4)$~', $url)) {
+                    continue;
+                }
+
+                if (mb_substr($url, 0, 2) == '//') {
+                    $url = "{$scheme}://" . mb_substr($url, 2);
+                }
 
                 if ( ! empty($url) && $url != '#') {
                     if ($domain = $this->getDomain($url)) {
@@ -698,10 +757,7 @@ class Transform {
                         ];
 
                     } else {
-                        $domain = $this->getDomain($source_url);
-                        $scheme = $this->getScheme($source_url);
-
-                        if ($domain) {
+                        if ($domain = $this->getDomain($source_url)) {
                             $url = ltrim($url, '/');
 
                             $references[] = [

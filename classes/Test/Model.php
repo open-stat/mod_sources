@@ -74,7 +74,7 @@ class Model extends \Common {
 
 
         echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Обработанные данные - {$pages_count}</h4>";
-        echo '<pre style="max-width: 1000px">';
+        echo '<pre style="max-width: 1000px;white-space: break-spaces;">';
         foreach ($pages as $page) {
             $page_parsed = $site->parsePage($page['url'], $page['content']);
 

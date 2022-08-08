@@ -102,7 +102,8 @@ class Site {
         $page        = [];
         $page['url'] = $url;
         $page += $transform->parsePage($content, $this->source->selectors->page->toArray(), [
-            'date_format' => $this->source->selectors->page?->date_format ?: $this->source->date_format
+            'date_format' => $this->source->selectors->page?->date_format ?: $this->source->date_format,
+            'url'         => $url
         ]);
 
 

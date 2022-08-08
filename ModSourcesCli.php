@@ -46,10 +46,9 @@ class ModSourcesCli extends Common {
                         continue;
                     }
 
-
-//                    if ( ! in_array($name, ['mfa.gov.by'])) {
-//                        continue;
-//                    }
+                    if ( ! empty($test_sources) && ! in_array($name, $test_sources)) {
+                        continue;
+                    }
 
                     $source_data = $transform->getSource($source->start_url, $source->tags, $source->region);
                     $source_id   = $loader->saveSource($source_data);
@@ -121,10 +120,7 @@ class ModSourcesCli extends Common {
                     ) {
                         continue;
                     }
-//
-//                    if ( ! in_array($name, ['mfa.gov.by'])) {
-//                        continue;
-//                    }
+
 
                     $site         = new Sources\Index\Site($source);
                     $pages_raw    = $this->modSources->dataSourcesContentsRaw->getRowsPendingByDomain($name);

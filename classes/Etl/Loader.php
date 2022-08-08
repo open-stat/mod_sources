@@ -119,7 +119,7 @@ class Loader extends \Common {
             if ( ! empty($page['tags'])) {
                 foreach ($page['tags'] as $tag) {
 
-                    if ( ! $tag) {
+                    if ($tag) {
                         $tag_row = $this->modSources->dataSourcesTags->saveTag($tag, 'tag');
 
                         $page_tag_row = $this->modSources->dataSourcesPagesTags->createRow([
@@ -135,7 +135,7 @@ class Loader extends \Common {
             if ( ! empty($page['categories'])) {
                 foreach ($page['categories'] as $tag) {
 
-                    if ( ! $tag) {
+                    if ($tag) {
                         $tag_row = $this->modSources->dataSourcesTags->saveTag($tag, 'category');
 
                         $page_tag_row = $this->modSources->dataSourcesPagesTags->createRow([
@@ -151,7 +151,7 @@ class Loader extends \Common {
             if ( ! empty($page['region'])) {
                 foreach ($page['region'] as $tag) {
 
-                    if ( ! $tag) {
+                    if ($tag) {
                         $tag_row = $this->modSources->dataSourcesTags->saveTag($tag, 'region');
 
                         $page_tag_row = $this->modSources->dataSourcesPagesTags->createRow([

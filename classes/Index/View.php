@@ -108,9 +108,9 @@ class View extends \Common {
 
         foreach ($page_tags as $page_tag) {
             switch ($page_tag->type) {
-                case 'tag':      $tags[]       = $page_tag->tag; break;
-                case 'category': $categories[] = $page_tag->tag; break;
-                case 'region':   $regions[]    = $page_tag->tag; break;
+                case 'tag':      $tags[]       = "<span class=\"label label-default\">{$page_tag->tag}</span>"; break;
+                case 'category': $categories[] = "<span class=\"label label-default\">{$page_tag->tag}</span>"; break;
+                case 'region':   $regions[]    = "<span class=\"label label-default\">{$page_tag->tag}</span>"; break;
             }
         }
 
@@ -140,9 +140,9 @@ class View extends \Common {
 
         $edit->addControl('Заголовок',              "TEXT",       'style="width:600px;"');
         $edit->addControl('Дата публикации',        "DATETIME2");
-        $edit->addControl('Категории',              "CUSTOM",     $categories ? implode(', ', $categories) : '');
-        $edit->addControl('Теги',                   "CUSTOM",     $tags ? implode(', ', $tags) : '');
-        $edit->addControl('Регион',                 "CUSTOM",     $regions ? implode(', ', $regions) : '');
+        $edit->addControl('Категории',              "CUSTOM",     $categories ? implode(' ', $categories) : '');
+        $edit->addControl('Теги',                   "CUSTOM",     $tags ? implode(' ', $tags) : '');
+        $edit->addControl('Регион',                 "CUSTOM",     $regions ? implode(' ', $regions) : '');
         $edit->addControl('Ссылка',                 "LINK",       'style="width:600px;"');
         $edit->addControl('Источник новости',       "TEXT",       'style="width:300px;"');
         $edit->addControl('Автор',                  "TEXT",       'style="width:300px;"');
