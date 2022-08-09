@@ -72,16 +72,16 @@ class Model extends \Common {
         }
         echo '</pre>';
 
+        if ($config->source->selectors->page) {
+            echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Обработанные данные - {$pages_count}</h4>";
+            echo '<pre style="max-width: 1000px;white-space: break-spaces;">';
+            foreach ($pages as $page) {
+                $page_parsed = $site->parsePage($page['url'], $page['content']);
 
-        echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Обработанные данные - {$pages_count}</h4>";
-        echo '<pre style="max-width: 1000px;white-space: break-spaces;">';
-        foreach ($pages as $page) {
-            $page_parsed = $site->parsePage($page['url'], $page['content']);
-
-            print_r($page_parsed);
+                print_r($page_parsed);
+            }
+            echo '</pre>';
         }
-        echo '</pre>';
-
 
         return '';
     }

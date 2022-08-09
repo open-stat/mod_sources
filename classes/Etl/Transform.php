@@ -126,6 +126,8 @@ class Transform {
                             } else {
                                 $page['url'] = $url;
                             }
+                        } else {
+                            continue;
                         }
 
                         if ( ! empty($rule['title'])) {
@@ -144,8 +146,8 @@ class Transform {
                             $page['tags'] = $this->getTags($item, $rule['tags']);
                         }
 
-                        if ( ! empty($rule['categories'])) {
-                            $page['categories'] = $this->getTags($item, $rule['categories']);
+                        if ( ! empty($rule['category'])) {
+                            $page['categories'] = $this->getTags($item, $rule['category']);
                         }
 
                         if ( ! empty($rule['date_publish'])) {

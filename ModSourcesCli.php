@@ -80,6 +80,7 @@ class ModSourcesCli extends Common {
                                 $options['date_publish'] = $page_list['date_publish'];
                                 $options['tags']         = $page_list['tags'];
                                 $options['categories']   = $page_list['categories'];
+                                $options['title']        = $page_list['title'];
                                 break;
                             }
                         }
