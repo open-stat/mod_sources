@@ -1,9 +1,7 @@
 <?php
 namespace Core2\Mod\Sources\Etl;
-
-
-use Core2\Mod\Sources\Page;
 use JetBrains\PhpStorm\ArrayShape;
+use Symfony\Component\DomCrawler\Crawler;
 
 /**
  *
@@ -70,21 +68,11 @@ class Transform {
      * @param array  $rules
      * @param array  $options
      * @return array
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\CircularException
-     * @throws \PHPHtmlParser\Exceptions\ContentLengthException
-     * @throws \PHPHtmlParser\Exceptions\LogicalException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
-     * @throws \PHPHtmlParser\Exceptions\StrictException
      */
     public function parseList(string $content, array $rules, array $options = []): array {
 
         $pages = [];
-
-        ini_set("mbstring.regex_retry_limit", "10000000");
-
-        $dom = new \PHPHtmlParser\Dom();
-        $dom->loadStr($content);
+        $dom    = new Crawler($content);
 
         foreach ($rules as $rule) {
 
@@ -92,79 +80,79 @@ class Transform {
                 continue;
             }
 
-            $items = $dom->find($rule['items']);
-
-            if ( ! empty($items)) {
-                foreach ($items as $item) {
-                    try {
-                        $page = [
-                            'url'          => '',
-                            'title'        => '',
-                            'count_views'  => '',
-                            'date_publish' => '',
-                            'tags'         => [],
-                            'categories'   => [],
-                        ];
+            $pages = $this->filter($dom, $rule['items'])->each(function (Crawler $item) use ($rule, $options) {
+                try {
+                    $page = [
+                        'url'          => '',
+                        'title'        => '',
+                        'count_views'  => '',
+                        'date_publish' => '',
+                        'tags'         => [],
+                        'categories'   => [],
+                    ];
 
 
-                        $item_url = ! empty($rule['url'])
-                            ? $item->find($rule['url'])[0]
-                            : $item;
+                    $item_url = ! empty($rule['url'])
+                        ? $this->filter($item, $rule['url'])
+                        : $item;
 
-                        $url = $item_url ? trim($item_url->getAttribute('href') ?? '') : '';
+                    $url = $item_url->count() > 0 ? trim($item_url->attr('href')) : '';
 
-                        if ( ! empty($url)) {
-                            if ( ! $this->getDomain($url) && ! empty($options['url'])) {
-                                $domain = $this->getDomain($options['url']);
-                                $scheme = $this->getScheme($options['url']);
+                    if ( ! empty($url)) {
+                        if ( ! $this->getDomain($url) && ! empty($options['url'])) {
+                            $domain = $this->getDomain($options['url']);
+                            $scheme = $this->getScheme($options['url']);
 
-                                if ($domain) {
-                                    $url         = ltrim($url, '/');
-                                    $page['url'] = "{$scheme}://{$domain}/{$url}";
-                                }
-
-                            } else {
-                                $page['url'] = $url;
+                            if ($domain) {
+                                $url         = ltrim($url, '/');
+                                $page['url'] = "{$scheme}://{$domain}/{$url}";
                             }
+
                         } else {
-                            continue;
+                            $page['url'] = $url;
                         }
-
-                        if ( ! empty($rule['title'])) {
-                            $page['title'] = $this->getTitle($item, $rule['title']);
-                        }
-
-                        if ( ! empty($rule['count_views'])) {
-                            $page['count_views'] = $this->getCountView($item, $rule['count_views']);
-                        }
-
-                        if ( ! empty($rule['region'])) {
-                            $page['region'] = $this->getTags($item, $rule['region']);
-                        }
-
-                        if ( ! empty($rule['tags'])) {
-                            $page['tags'] = $this->getTags($item, $rule['tags']);
-                        }
-
-                        if ( ! empty($rule['category'])) {
-                            $page['categories'] = $this->getTags($item, $rule['category']);
-                        }
-
-                        if ( ! empty($rule['date_publish'])) {
-                            $page['date_publish'] = $this->getDatePublish($item, $rule['date_publish'], $rule['date_format'] ?? $options['date_format'] ?? '');
-                        }
-
-                        $pages[] = $page;
-
-                    } catch (\Exception $e) {
-                        echo $e->getMessage() . PHP_EOL;
-                        echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
-                        // ignore
+                    } else {
+                        return null;
                     }
+
+                    if ( ! empty($rule['title'])) {
+                        $page['title'] = $this->getTitle($item, $rule['title']);
+                    }
+
+                    if ( ! empty($rule['count_views'])) {
+                        $page['count_views'] = $this->getCountView($item, $rule['count_views']);
+                    }
+
+                    if ( ! empty($rule['region'])) {
+                        $page['region'] = $this->getTags($item, $rule['region']);
+                    }
+
+                    if ( ! empty($rule['tags'])) {
+                        $page['tags'] = $this->getTags($item, $rule['tags']);
+                    }
+
+                    if ( ! empty($rule['category'])) {
+                        $page['categories'] = $this->getTags($item, $rule['category']);
+                    }
+
+                    if ( ! empty($rule['date_publish'])) {
+                        $page['date_publish'] = $this->getDatePublish($item, $rule['date_publish'], $rule['date_format'] ?? $options['date_format'] ?? '');
+                    }
+                    return $page;
+
+                } catch (\Exception $e) {
+                    echo $e->getMessage() . PHP_EOL;
+                    echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+                    return null;
                 }
-            }
+            });
         }
 
+        foreach ($pages as $key => $page) {
+            if (empty($page)) {
+                unset($pages[$key]);
+            }
+        }
 
         return $pages;
     }
@@ -183,11 +171,7 @@ class Transform {
      */
     public function parsePage(string $content, array $rules, array $options = []): array {
 
-        $parser_options = new \PHPHtmlParser\Options();
-        $parser_options->setEnforceEncoding('utf8');
-
-        $dom = new \PHPHtmlParser\Dom();
-        $dom->loadStr($content, $parser_options);
+        $dom = new Crawler($content);
 
         try {
             $page = [
@@ -230,7 +214,7 @@ class Transform {
             }
 
             if ( ! empty($rules['category'])) {
-                $page['categories'] = $this->getCategories($dom, $rules['category']);
+                $page['categories'] = $this->getTags($dom, $rules['category']);
             }
 
             if ( ! empty($rules['author'])) {
@@ -238,15 +222,13 @@ class Transform {
             }
 
             if ( ! empty($rules['content'])) {
-                $items       = $dom->find($rules['content']);
-                $content_raw = '';
-
-                foreach ($items as $item) {
-                    $content_raw .= $item ? trim($item->innerHtml) : '';
-                }
+                $items       = $this->filter($dom, $rules['content']);
+                $content_raw = $items->each(function (Crawler $item) {
+                    return trim($item->html(), " \n\r");
+                });
 
                 if ($content_raw) {
-                    $page['content'] = $this->getContent($content_raw);
+                    $page['content'] = $this->getContent(implode(' ', $content_raw));
                 }
 
                 $page['media']      = $this->getMedia($dom, $rules['content']);
@@ -496,22 +478,17 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
-     * @param                    $rule
+     * @param Crawler $dom
+     * @param string  $rule
      * @return array
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getTags($dom, $rule): array {
+    private function getTags(Crawler $dom, string $rule): array {
 
-        $items = $dom->find($rule);
+        $items = $this->filter($dom, $rule);
         $tags  = [];
 
         foreach ($items as $item) {
-            $tags_text = trim($item->innerHtml) ?: trim($item->text);
-            $tags_text = strip_tags($tags_text);
-
-            foreach (explode(',', $tags_text) as $tag) {
+            foreach (explode(',', $item->textContent) as $tag) {
                 $tag = mb_strtolower($tag);
                 $tag = preg_replace('~&[A-z#0-9]+;~', ' ', $tag);
                 $tag = preg_replace('~[ ]{2,}~', ' ', $tag);
@@ -528,34 +505,26 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
-     * @param string             $rule
-     * @param string             $date_format
+     * @param Crawler $dom
+     * @param string  $rule
+     * @param string  $date_format
      * @return string
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\CircularException
-     * @throws \PHPHtmlParser\Exceptions\ContentLengthException
-     * @throws \PHPHtmlParser\Exceptions\LogicalException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
-     * @throws \PHPHtmlParser\Exceptions\StrictException
      */
-    private function getDatePublish($dom, string $rule, string $date_format = ''): string {
+    private function getDatePublish(Crawler $dom, string $rule, string $date_format = ''): string {
 
-        $item = $dom->find($rule);
+        $items = $this->filter($dom, $rule);
 
         $date_publish = '';
 
-        if ($item && $item[0]) {
-            $attr_datetime = $item[0]->getAttribute('datetime');
+        if ($items) {
+            $attr_datetime = $items->attr('datetime');
 
             if ($attr_datetime && preg_match('~(\d{4}-\d{2}-\d{2}.\d{2}:\d{2}:\d{2})~', $attr_datetime, $match)) {
                 $date_publish_text = $match[1] ?? '';
                 $date_format       = '~(?<year>[\d]{4})\-(?<month>[\d]{2})\-(?<day>[\d]{2}).(?<hour>[\d]{1,2}):(?<min>[\d]{1,2})(?:\:(?<sec>[\d]{1,2})|)~';
 
             } else {
-                $date_publish_text = $item && $item[0]
-                    ? (trim($item[0]->innerHtml) ?: trim($item[0]->text))
-                    : '';
+                $date_publish_text = $items->text();
                 $date_publish_text = strip_tags($date_publish_text);
 
                 if ($date_publish_text) {
@@ -618,74 +587,62 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
-     * @param string             $rule
+     * @param Crawler $dom
+     * @param string  $rule
      * @return string
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getSourceUrl(\PHPHtmlParser\Dom $dom, string $rule): string {
+    private function getSourceUrl(Crawler $dom, string $rule): string {
 
-        $item = $dom->find($rule);
-        return  $item && $item[0] ? trim($item[0]->getAttribute('href')) : '';
+        $item = $this->filter($dom, $rule);
+        return $item->count() > 0 ? $item->attr('href') : '';
     }
 
 
     /**
-     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
-     * @param string             $rule
+     * @param Crawler $dom
+     * @param string  $rule
      * @return string
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getTitle($dom, string $rule): string {
+    private function getTitle(Crawler $dom, string $rule): string {
 
-        $item = $dom->find($rule);
-        $title = $item && $item[0]
-            ? trim($item[0]->innerHtml) ?: trim($item[0]->text)
-            : '';
+        $item = $this->filter($dom, $rule);
 
-        $title = strip_tags($title);
+        $title = $item->text();
         $title = preg_replace('~&[A-z#0-9]+;~', ' ', $title);
+        $title = preg_replace('~[ ]{2,}~', ' ', $title);
 
-        return preg_replace('~[ ]{2,}~', ' ', $title);
+        return $title;
     }
 
 
     /**
-     * @param \PHPHtmlParser\Dom|\PHPHtmlParser\Dom\Node\HtmlNode $dom
-     * @param string             $rule
-     * @return string
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
+     * @param Crawler $dom
+     * @param string  $rule
+     * @return int
      */
-    private function getCountView($dom, string $rule): string {
+    private function getCountView(Crawler $dom, string $rule): int {
 
-        $item_count_views = $dom->find($rule);
-        $count_views = $item_count_views && $item_count_views[0] ? trim($item_count_views[0]->text) : '';
-        return preg_replace('~[^0-9]~', '', $count_views);
+        $elements    = $this->filter($dom, $rule);
+        $count_views = $elements->count() > 0 ? $elements->text() : '';
+
+        return (int)preg_replace('~[^0-9]~', '', $count_views);
     }
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
-     * @param string             $rule
+     * @param Crawler $dom
+     * @param string  $rule
      * @return string
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getAuthor(\PHPHtmlParser\Dom $dom, string $rule): string {
+    private function getAuthor(Crawler $dom, string $rule): string {
 
-        $item = $dom->find($rule);
+        $elements = $this->filter($dom, $rule);
 
-        $author = strip_tags($item && $item[0])
-            ? (trim($item[0]->innerHtml) ?: trim($item[0]->text))
-            : '';
-
+        $author = $elements->count() > 0 ? $elements->text() : '';
         $author = strip_tags($author);
         $author = htmlspecialchars_decode($author);
-        $author = str_replace('&nbsp', ' ', $author);
         $author = preg_replace('~&[A-z#0-9]+;~', ' ', $author);
+        $author = str_replace('&nbsp', ' ', $author);
         $author = preg_replace('~[ ]{2,}~', ' ', $author);
 
         return trim($author);
@@ -724,23 +681,21 @@ class Transform {
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
-     * @param string             $rule
-     * @param string|null        $source_url
+     * @param Crawler     $dom
+     * @param string      $rule
+     * @param string|null $source_url
      * @return array
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getReferences(\PHPHtmlParser\Dom $dom, string $rule, string $source_url = null): array {
+    private function getReferences(Crawler $dom, string $rule, string $source_url = null): array {
 
         $references    = [];
-        $content_links = $dom->find($rule . ' a');
+        $content_links = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//a' : ' a'));
 
         if ( ! empty($content_links)) {
             $scheme = $source_url ? $this->getScheme($source_url) : 'http';
 
             foreach ($content_links as $content_link) {
-                $url = $content_link?->getAttribute('href') ?? '';
+                $url = $content_link->getAttribute('href');
                 $url = str_replace('&amp;', '&', $url);
 
                 if (preg_match('~\.(jpg|jpeg|png|gif|webp|mp4)$~', $url)) {
@@ -783,105 +738,104 @@ class Transform {
     private function getContent(string $content): string {
 
         $content = $this->deleteTags($content, ['script', 'style']);
+
         $content = strip_tags($content);
         $content = htmlspecialchars_decode($content);
         $content = preg_replace('~&[A-z#0-9]+;~', ' ', $content);
-        $content = preg_replace('~[ ]{2,}~', ' ', $content);
+        $content = preg_replace('~[\s]{2,}~muis', ' ', $content);
 
         return trim($content);
     }
 
 
     /**
-     * @param \PHPHtmlParser\Dom $dom
-     * @param string             $rule
+     * @param Crawler $dom
+     * @param string  $rule
      * @return array
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      */
-    private function getMedia(\PHPHtmlParser\Dom $dom, string $rule): array {
+    private function getMedia(Crawler $dom, string $rule): array {
 
-        $media = [];
-        $item  = $dom->find($rule);
+        $media    = [];
+        $elements = $this->filter($dom, $rule);
 
 
-        if ($item &&
-            $item[0] &&
-            in_array(strtolower($item[0]->getTag()->name()), ['img', 'video', 'audio'])
-        ) {
-            $description = trim($item[0]?->getAttribute('alt') ?? '');
-            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-            $description = preg_replace('~[ ]{2,}~', ' ', $description);
-            $description = mb_strtolower($description);
+        if ($elements->count() > 0) {
+            if (in_array(strtolower($elements->nodeName()), ['img', 'video', 'audio'])) {
+                $src = trim($elements->attr('src') ?? '');
 
-            $src = trim($item[0]?->getAttribute('src') ?? '');
-
-            if ($src) {
-                $media[] = [
-                    'type'        => $item[0]->getTag()->name(),
-                    'url'         => $src,
-                    'description' => $description,
-                ];
-            }
-
-        } else {
-            $items_img   = $dom->find($rule . ' img');
-            $items_video = $dom->find($rule . ' video');
-            $items_audio = $dom->find($rule . ' audio');
-
-            if ( ! empty($items_img)) {
-                foreach ($items_img as $item) {
-                    $description = trim($item->getAttribute('alt') ?? '');
+                if ($src) {
+                    $description = trim($elements->attr('alt') ?? '');
                     $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
                     $description = preg_replace('~[ ]{2,}~', ' ', $description);
                     $description = mb_strtolower($description);
 
-                    $src = trim($item->getAttribute('src') ?? '');
+                    $media[] = [
+                        'type'        => $elements->nodeName,
+                        'url'         => $src,
+                        'description' => $description,
+                    ];
+                }
 
-                    if ($src) {
-                        $media[] = [
-                            'type'        => $item->getTag()->name(),
-                            'url'         => $src,
-                            'description' => $description,
-                        ];
+            } else {
+                $items_img   = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//img'   : ' img'));
+                $items_video = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//video' : ' video'));
+                $items_audio = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//audio' : ' audio'));
+
+                if ( ! empty($items_img)) {
+                    foreach ($items_img as $item) {
+                        $src = trim($item->getAttribute('src'));
+
+                        if ($src) {
+                            $description = trim($item->getAttribute('alt'));
+                            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
+                            $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                            $description = mb_strtolower($description);
+
+                            $media[] = [
+                                'type'        => $item->tagName,
+                                'url'         => $src,
+                                'description' => $description,
+                            ];
+                        }
                     }
                 }
-            }
 
-            if ( ! empty($items_video)) {
-                foreach ($items_video as $item) {
-                    $description = trim($item->getAttribute('alt') ?? '');
-                    $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                    $description = preg_replace('~[ ]{2,}~', ' ', $description);
-                    $description = mb_strtolower($description);
+                if ( ! empty($items_video)) {
+                    foreach ($items_video as $item) {
+                        $src = trim($item?->getAttribute('src'));
 
-                    $src = trim($item?->getAttribute('src') ?? '');
+                        if ($src) {
+                            $description = trim($item->getAttribute('alt'));
+                            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
+                            $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                            $description = mb_strtolower($description);
 
-                    if ($src) {
-                        $media[] = [
-                            'type'        => $item->getTag()->name(),
-                            'url'         => $src,
-                            'description' => $description,
-                        ];
+                            $media[] = [
+                                'type'        => $item->tagName,
+                                'url'         => $src,
+                                'description' => $description,
+                            ];
+                        }
                     }
                 }
-            }
 
-            if ( ! empty($items_audio)) {
-                foreach ($items_audio as $item) {
-                    $description = trim($item->getAttribute('alt') ?? '');
-                    $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                    $description = preg_replace('~[ ]{2,}~', ' ', $description);
-                    $description = mb_strtolower($description);
+                if ( ! empty($items_audio)) {
+                    foreach ($items_audio as $item) {
 
-                    $src = trim($item?->getAttribute('src') ?? '');
+                        $src = trim($item?->getAttribute('src'));
 
-                    if ($src) {
-                        $media[] = [
-                            'type'        => $item->getTag()->name(),
-                            'url'         => $src,
-                            'description' => $description,
-                        ];
+                        if ($src) {
+                            $description = trim($item->getAttribute('alt'));
+                            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
+                            $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                            $description = mb_strtolower($description);
+
+                            $media[] = [
+                                'type'        => $item->tagName,
+                                'url'         => $src,
+                                'description' => $description,
+                            ];
+                        }
                     }
                 }
             }
@@ -920,12 +874,37 @@ class Transform {
      */
     private function deleteTags(string $string, array $tags): string {
 
-        $html = [];
+        $regex = [];
 
         foreach ($tags as $tag) {
-            $html[] = "/(<(?:\/{$tag}|{$tag})[^>]*>)/i";
+            $regex[] = "~(<{$tag}[^>]*>.*?</{$tag}[^>]*>)~muis";
         }
 
-        return (string)preg_replace($html, '', $string);
+        return (string)preg_replace($regex, '', $string);
+    }
+
+
+    /**
+     * @param Crawler $dom
+     * @param string  $rule
+     * @return Crawler
+     */
+    private function filter(Crawler $dom, string $rule): Crawler {
+
+        if ($this->isXpath($rule)) {
+            return $dom->filterXPath(mb_substr($rule, 6));
+        } else {
+            return $dom->filter($rule);
+        }
+    }
+
+
+    /**
+     * @param string $rule
+     * @return bool
+     */
+    private function isXpath(string $rule): bool {
+
+        return mb_strpos($rule, 'xpath:') === 0;
     }
 }
