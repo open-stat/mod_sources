@@ -80,7 +80,7 @@ class Transform {
                 continue;
             }
 
-            $pages = $this->filter($dom, $rule['items'])->each(function (Crawler $item) use ($rule, $options) {
+            $pages_rule = $this->filter($dom, $rule['items'])->each(function (Crawler $item) use ($rule, $options) {
                 try {
                     $page = [
                         'url'          => '',
@@ -146,13 +146,14 @@ class Transform {
                     return null;
                 }
             });
-        }
 
-        foreach ($pages as $key => $page) {
-            if (empty($page)) {
-                unset($pages[$key]);
+            foreach ($pages_rule as $page) {
+                if ($page) {
+                    $pages[] = $page;
+                }
             }
         }
+
 
         return $pages;
     }
@@ -516,7 +517,7 @@ class Transform {
 
         $date_publish = '';
 
-        if ($items) {
+        if ($items->count() > 0) {
             $attr_datetime = $items->attr('datetime');
 
             if ($attr_datetime && preg_match('~(\d{4}-\d{2}-\d{2}.\d{2}:\d{2}:\d{2})~', $attr_datetime, $match)) {
@@ -607,7 +608,7 @@ class Transform {
 
         $item = $this->filter($dom, $rule);
 
-        $title = $item->text();
+        $title = $item->count() > 0 ? $item->text() : '';
         $title = preg_replace('~&[A-z#0-9]+;~', ' ', $title);
         $title = preg_replace('~[ ]{2,}~', ' ', $title);
 
@@ -689,39 +690,36 @@ class Transform {
     private function getReferences(Crawler $dom, string $rule, string $source_url = null): array {
 
         $references    = [];
+        $scheme        = $source_url ? $this->getScheme($source_url) : 'http';
         $content_links = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//a' : ' a'));
 
-        if ( ! empty($content_links)) {
-            $scheme = $source_url ? $this->getScheme($source_url) : 'http';
+        foreach ($content_links as $content_link) {
+            $url = $content_link->getAttribute('href');
+            $url = str_replace('&amp;', '&', $url);
 
-            foreach ($content_links as $content_link) {
-                $url = $content_link->getAttribute('href');
-                $url = str_replace('&amp;', '&', $url);
+            if (preg_match('~\.(jpg|jpeg|png|gif|webp|mp4)$~', $url)) {
+                continue;
+            }
 
-                if (preg_match('~\.(jpg|jpeg|png|gif|webp|mp4)$~', $url)) {
-                    continue;
-                }
+            if (mb_substr($url, 0, 2) == '//') {
+                $url = "{$scheme}://" . mb_substr($url, 2);
+            }
 
-                if (mb_substr($url, 0, 2) == '//') {
-                    $url = "{$scheme}://" . mb_substr($url, 2);
-                }
+            if ( ! empty($url) && $url != '#') {
+                if ($domain = $this->getDomain($url)) {
+                    $references[] = [
+                        'domain' => $domain,
+                        'url'    => $url,
+                    ];
 
-                if ( ! empty($url) && $url != '#') {
-                    if ($domain = $this->getDomain($url)) {
+                } else {
+                    if ($domain = $this->getDomain($source_url)) {
+                        $url = ltrim($url, '/');
+
                         $references[] = [
                             'domain' => $domain,
-                            'url'    => $url,
+                            'url'    => "{$scheme}://{$domain}/{$url}",
                         ];
-
-                    } else {
-                        if ($domain = $this->getDomain($source_url)) {
-                            $url = ltrim($url, '/');
-
-                            $references[] = [
-                                'domain' => $domain,
-                                'url'    => "{$scheme}://{$domain}/{$url}",
-                            ];
-                        }
                     }
                 }
             }
@@ -781,61 +779,55 @@ class Transform {
                 $items_video = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//video' : ' video'));
                 $items_audio = $this->filter($dom, $rule . ($this->isXpath($rule) ? '*//audio' : ' audio'));
 
-                if ( ! empty($items_img)) {
-                    foreach ($items_img as $item) {
-                        $src = trim($item->getAttribute('src'));
+                foreach ($items_img as $item) {
+                    $src = trim($item->getAttribute('src'));
 
-                        if ($src) {
-                            $description = trim($item->getAttribute('alt'));
-                            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                            $description = preg_replace('~[ ]{2,}~', ' ', $description);
-                            $description = mb_strtolower($description);
+                    if ($src) {
+                        $description = trim($item->getAttribute('alt'));
+                        $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
+                        $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                        $description = mb_strtolower($description);
 
-                            $media[] = [
-                                'type'        => $item->tagName,
-                                'url'         => $src,
-                                'description' => $description,
-                            ];
-                        }
+                        $media[] = [
+                            'type'        => $item->tagName,
+                            'url'         => $src,
+                            'description' => $description,
+                        ];
                     }
                 }
 
-                if ( ! empty($items_video)) {
-                    foreach ($items_video as $item) {
-                        $src = trim($item?->getAttribute('src'));
+                foreach ($items_video as $item) {
+                    $src = trim($item?->getAttribute('src'));
 
-                        if ($src) {
-                            $description = trim($item->getAttribute('alt'));
-                            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                            $description = preg_replace('~[ ]{2,}~', ' ', $description);
-                            $description = mb_strtolower($description);
+                    if ($src) {
+                        $description = trim($item->getAttribute('alt'));
+                        $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
+                        $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                        $description = mb_strtolower($description);
 
-                            $media[] = [
-                                'type'        => $item->tagName,
-                                'url'         => $src,
-                                'description' => $description,
-                            ];
-                        }
+                        $media[] = [
+                            'type'        => $item->tagName,
+                            'url'         => $src,
+                            'description' => $description,
+                        ];
                     }
                 }
 
-                if ( ! empty($items_audio)) {
-                    foreach ($items_audio as $item) {
+                foreach ($items_audio as $item) {
 
-                        $src = trim($item?->getAttribute('src'));
+                    $src = trim($item?->getAttribute('src'));
 
-                        if ($src) {
-                            $description = trim($item->getAttribute('alt'));
-                            $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                            $description = preg_replace('~[ ]{2,}~', ' ', $description);
-                            $description = mb_strtolower($description);
+                    if ($src) {
+                        $description = trim($item->getAttribute('alt'));
+                        $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
+                        $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                        $description = mb_strtolower($description);
 
-                            $media[] = [
-                                'type'        => $item->tagName,
-                                'url'         => $src,
-                                'description' => $description,
-                            ];
-                        }
+                        $media[] = [
+                            'type'        => $item->tagName,
+                            'url'         => $src,
+                            'description' => $description,
+                        ];
                     }
                 }
             }
