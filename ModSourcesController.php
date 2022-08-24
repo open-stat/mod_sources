@@ -62,7 +62,14 @@ class ModSourcesController extends Common {
                 $content[] = $edit->render();
 
             } else {
-                $content[] = $view->getTable($base_url)->render();
+
+                $panel->addTab('Публикации', 'publications', $base_url);
+                $panel->addTab('Источники',  'sources',      $base_url);
+
+                switch ($panel->getActiveTab()) {
+                    case 'publications': $content[] = $view->getTable($base_url)->render(); break;
+                    case 'sources':      $content[] = $view->getTableSources($base_url)->render();break;
+                }
             }
 
         } catch (\Exception $e) {

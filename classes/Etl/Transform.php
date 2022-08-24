@@ -768,7 +768,7 @@ class Transform {
                     $description = mb_strtolower($description);
 
                     $media[] = [
-                        'type'        => $elements->nodeName,
+                        'type'        => $elements->nodeName(),
                         'url'         => $src,
                         'description' => $description,
                     ];

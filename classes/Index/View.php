@@ -82,6 +82,55 @@ class View extends \Common {
 
 
     /**
+     * @param string $base_url
+     * @return Table\Db
+     * @throws Table\Exception
+     * @throws \Zend_Db_Select_Exception
+     */
+    public function getTableSources(string $base_url): Table\Db {
+
+        $table = new Table\Db($this->resId);
+        $table->setTable("mod_sources");
+        $table->setPrimaryKey('id');
+        $table->setRecordsPerPage(100);
+        $table->hideCheckboxes();
+
+        $table->setQuery("
+            SELECT s.id,
+                   s.domain,
+                   s.region,
+                   s.tags,
+                   COUNT(sp.id) AS count_tags
+            
+            FROM mod_sources AS s
+                LEFT JOIN mod_sources_pages AS sp ON s.id = sp.source_id
+            GROUP BY s.id
+            ORDER BY s.date_created DESC
+        ");
+
+        $table->addFilter("s.domain", $table::FILTER_TEXT, $this->_("Название"));
+
+
+        $table->addColumn($this->_("Название"),              'domain',       $table::COLUMN_TEXT, 250);
+        $table->addColumn($this->_("Регион"),                'region',       $table::COLUMN_TEXT, 200);
+        $table->addColumn($this->_("Тэги"),                  'tags',         $table::COLUMN_TEXT);
+        $table->addColumn($this->_("Количество публикаций"), 'count_tags',   $table::COLUMN_NUMBER, 180);
+
+
+
+
+        $rows = $table->fetchRows();
+        if ( ! empty($rows)) {
+            foreach ($rows as $row) {
+
+            }
+        }
+
+        return $table;
+    }
+
+
+    /**
      * @param \Zend_Db_Table_Row_Abstract $page
      * @return \editTable
      * @throws \Zend_Config_Exception
