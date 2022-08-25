@@ -212,7 +212,7 @@ class Transform {
             if ( ! empty($rules['content'])) {
                 $items       = $this->filter($dom, $rules['content']);
                 $content_raw = $items->each(function (Crawler $item) {
-                    return trim($item->html(), " \n\r");
+                    return trim($item->html());
                 });
 
                 if ($content_raw) {
@@ -722,6 +722,7 @@ class Transform {
 
         $content = strip_tags($content);
         $content = htmlspecialchars_decode($content);
+        $content = str_replace("\n", ' ', $content);
         $content = preg_replace('~&[A-z#0-9]+;~', ' ', $content);
         $content = preg_replace('~[\s]{2,}~muis', ' ', $content);
 
