@@ -9,10 +9,11 @@ class Extract extends \Common {
 
     /**
      * @param string $url
+     * @param array  $options
      * @return string
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function loadList(string $url): string {
+    public function loadList(string $url, array $options = []): string {
 
         $responses = $this->modProxy->request('get', [$url], [
             'request' => [
@@ -23,7 +24,7 @@ class Extract extends \Common {
             'level_anonymity' => ['elite', /*'anonymous', 'non_anonymous'*/ ],
             'max_try'         => 5,
             'limit'           => 5,
-            //'debug' => 'print',
+            'debug'           => ! empty($options['debug_requests']) && $options['debug_requests'] ? 'print' : '',
         ]);
 
         $response = current($responses);
@@ -43,10 +44,11 @@ class Extract extends \Common {
 
     /**
      * @param array $addresses
+     * @param array $options
      * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function loadPages(array $addresses): array {
+    public function loadPages(array $addresses, array $options = []): array {
 
         $pages = [];
 
@@ -59,8 +61,8 @@ class Extract extends \Common {
                 ],
                 'level_anonymity' => ['elite', /*'anonymous', 'non_anonymous'*/ ],
                 'max_try'         => 5,
-                'limit'           => 5
-                //'debug' => 'print',
+                'limit'           => 5,
+                'debug'           => ! empty($options['debug_requests']) && $options['debug_requests'] ? 'print' : '',
             ]);
 
 

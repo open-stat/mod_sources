@@ -81,6 +81,7 @@ class Loader extends \Common {
                     'source_id'     => $source_id,
                     'title'         => trim($page['title']),
                     'url'           => $page['url'],
+                    'image'         => $page['image'] ?? null,
                     'source_domain' => $page['source_domain'] ?? null,
                     'source_url'    => $page['source_url'] ?? null,
                     'source_author' => $page['author'] ?? null,
@@ -92,6 +93,7 @@ class Loader extends \Common {
             } else {
                 $page_row->title         = $page['title'];
                 $page_row->url           = $page['url'];
+                $page_row->image         = $page['image'] ?? null;
                 $page_row->source_domain = $page['source_domain'] ?? null;
                 $page_row->source_url    = $page['source_url'] ?? null;
                 $page_row->source_author = $page['author'] ?? null;

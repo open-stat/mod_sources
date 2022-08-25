@@ -49,8 +49,11 @@ class Model extends \Common {
             throw new \Exception('Не найдены активные разделы');
         }
 
-        $site = new Sources\Index\Site($config_section);
+        $is_debug_requests = (bool)($options['debug_requests'] ?? false);
 
+        $site = new Sources\Index\Site($config_section, [
+            'debug_requests' => $is_debug_requests
+        ]);
 
         // загрузка одной страницы
         if ( ! empty($options['option_page_url'])) {
@@ -58,7 +61,23 @@ class Model extends \Common {
 
         // Получение вписка страниц
         } else {
-            $pages_list  = $site->loadList();
+            if ($is_debug_requests) {
+                echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Debug запроса</h4>";
+                echo '<pre style="max-width: 100%">';
+                try {
+                    $pages_list = $site->loadList();
+                    echo '</pre>';
+
+                } catch (\Exception $e) {
+                    echo "ОШИБКА: " . $e->getMessage();
+                    echo '</pre>';
+                    return '';
+                }
+
+            } else {
+                $pages_list = $site->loadList();
+            }
+
             $pages_url   = [];
             $pages_count = count($pages_list);
 
@@ -79,7 +98,22 @@ class Model extends \Common {
         }
 
 
-        $pages       = $site->loadPages($pages_url);
+        if ($is_debug_requests) {
+            echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Debug запроса</h4>";
+            echo '<pre style="max-width: 100%">';
+            try {
+                $pages = $site->loadPages($pages_url);
+                echo '</pre>';
+
+            } catch (\Exception $e) {
+                echo "ОШИБКА: " . $e->getMessage();
+                echo '</pre>';
+                return '';
+            }
+
+        } else {
+            $pages = $site->loadPages($pages_url);
+        }
         $pages_count = count($pages);
 
 

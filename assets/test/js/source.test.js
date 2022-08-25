@@ -72,6 +72,10 @@ var SourceTest = {
                 options['load_all_pages'] = true;
             }
 
+            if ($('#option-debug_requests').is(':checked')) {
+                options['debug_requests'] = true;
+            }
+
             if ($('#option-page-url').val()) {
                 options['option_page_url'] = $('#option-page-url').val();
             }

@@ -20,7 +20,7 @@ class ModSourcesCli extends Common {
 
         $configs = (new Sources\Index\Model())->getConfigs();
         $test_sources = [
-            //'relax.by'
+
         ];
 
         if ($configs) {
@@ -201,6 +201,7 @@ class ModSourcesCli extends Common {
                                 if (empty($page['tags']) && ! empty($page_options['tags']))                 { $page['tags'] = $page_options['tags']; }
                                 if (empty($page['categories']) && ! empty($page_options['categories']))     { $page['categories'] = $page_options['categories']; }
                                 if (empty($page['region']) && ! empty($page_options['region']))             { $page['region'] = $page_options['region']; }
+                                if (empty($page['image']) && ! empty($page_options['image']))               { $page['image'] = $page_options['image']; }
 
                                 $loader->savePage($page_raw->source_id, $page);
 

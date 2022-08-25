@@ -12,27 +12,33 @@ class Site {
      */
     private $config;
 
+    /**
+     * @var array
+     */
+    private $options;
+
 
     /**
      * @param array $config
+     * @param array $options
      */
-    public function __construct(array $config) {
+    public function __construct(array $config, array $options = []) {
 
-        $this->config = $config;
+        $this->config  = $config;
+        $this->options = $options;
     }
 
 
     /**
      * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Exception
      */
     public function loadList(): array {
 
         $extract   = new Sources\Etl\Extract();
         $transform = new Sources\Etl\Transform();
 
-        $list_content = $extract->loadList($this->config['start_url']);
+        $list_content = $extract->loadList($this->config['start_url'], $this->options);
 
         if (empty($list_content)) {
             throw new \Exception(sprintf('На ресурсе %s не удалось получить содержимое страницы', $this->config['start_url']));
@@ -58,7 +64,7 @@ class Site {
     public function loadPages(array $pages_url): array {
 
         $extract    = new Sources\Etl\Extract();
-        $pages_item = $extract->loadPages($pages_url);
+        $pages_item = $extract->loadPages($pages_url, $this->options);
 
         foreach ($pages_item as $k => $page_item) {
             if (isset($this->config['encoding']) && $this->config['encoding']) {

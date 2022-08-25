@@ -128,6 +128,10 @@ class Transform {
                         $page['categories'] = $this->getTags($item, $rule['category']);
                     }
 
+                    if ( ! empty($rule['image'])) {
+                        $page['image'] = $this->getImage($item, $rule['image'], $options['url'] ?? null);
+                    }
+
                     if ( ! empty($rule['date_publish'])) {
                         $page['date_publish'] = $this->getDatePublish($item, $rule['date_publish'], $rule['date_format'] ?? $options['date_format'] ?? '');
                     }
@@ -165,6 +169,7 @@ class Transform {
             'title'         => '',
             'content'       => '',
             'date_publish'  => '',
+            'image'         => '',
             'count_views'   => '',
             'author'        => '',
             'source_domain' => '',
@@ -209,6 +214,10 @@ class Transform {
                 $page['author'] = $this->getAuthor($dom, $rules['author']);
             }
 
+            if ( ! empty($rules['image'])) {
+                $page['image'] = $this->getImage($dom, $rules['image'], $options['url'] ?? null);
+            }
+
             if ( ! empty($rules['content'])) {
                 $items       = $this->filter($dom, $rules['content']);
                 $content_raw = $items->each(function (Crawler $item) {
@@ -219,7 +228,7 @@ class Transform {
                     $page['content'] = $this->getContent(implode(' ', $content_raw));
                 }
 
-                $page['media']      = $this->getMedia($dom, $rules['content']);
+                $page['media']      = $this->getMedia($dom, $rules['content'], $options['url'] ?? null);
                 $page['references'] = $this->getReferences($dom, $rules['content'], $options['url'] ?? null);
             }
 
@@ -589,7 +598,7 @@ class Transform {
         $title = strip_tags($title);
         $title = preg_replace('~&[A-z#0-9]+;~', ' ', $title);
         $title = preg_replace('~ ~', ' ', $title);
-        $title = preg_replace('~[ ]{2,}~', ' ', $title);
+        $title = preg_replace('~[\s]{2,}~', ' ', $title);
         $title = trim($title);
 
         return $title;
@@ -624,40 +633,9 @@ class Transform {
         $author = htmlspecialchars_decode($author);
         $author = preg_replace('~&[A-z#0-9]+;~', ' ', $author);
         $author = str_replace('&nbsp', ' ', $author);
-        $author = preg_replace('~[ ]{2,}~', ' ', $author);
+        $author = preg_replace('~[\s]{2,}~', ' ', $author);
 
         return trim($author);
-    }
-
-
-    /**
-     * @param \PHPHtmlParser\Dom $dom
-     * @param string             $rule
-     * @return array
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\NotLoadedException
-     */
-    private function getCategories(\PHPHtmlParser\Dom $dom, string $rule): array {
-
-        $items      = $dom->find($rule);
-        $categories = [];
-
-        foreach ($items as $item) {
-            $tags_text = $item ? trim($item->text) : '';
-
-            foreach (explode(',', $tags_text) as $category) {
-                $category = mb_strtolower($category);
-                $category = preg_replace('~&[A-z#0-9]+;~', ' ', $category);
-                $category = preg_replace('~[ ]{2,}~', ' ', $category);
-                $category = trim($category);
-
-                if ( ! empty($category) && array_search($category, $categories) === false) {
-                    $categories[] = trim($category);
-                }
-            }
-        }
-
-        return $categories;
     }
 
 
@@ -731,11 +709,12 @@ class Transform {
 
 
     /**
-     * @param Crawler $dom
-     * @param string  $rule
+     * @param Crawler     $dom
+     * @param string      $rule
+     * @param string|null $source_url
      * @return array
      */
-    private function getMedia(Crawler $dom, string $rule): array {
+    private function getMedia(Crawler $dom, string $rule, string $source_url = null): array {
 
         $media    = [];
         $elements = $this->filter($dom, $rule);
@@ -748,12 +727,12 @@ class Transform {
                 if ($src) {
                     $description = trim($elements->attr('alt') ?? '');
                     $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                    $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                    $description = preg_replace('~[\s]{2,}~', ' ', $description);
                     $description = mb_strtolower($description);
 
                     $media[] = [
                         'type'        => $elements->nodeName(),
-                        'url'         => $src,
+                        'url'         => $this->addUrlDomain($src, $source_url),
                         'description' => $description,
                     ];
                 }
@@ -769,12 +748,12 @@ class Transform {
                     if ($src) {
                         $description = trim($item->getAttribute('alt'));
                         $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                        $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                        $description = preg_replace('~[\s]{2,}~', ' ', $description);
                         $description = mb_strtolower($description);
 
                         $media[] = [
                             'type'        => $item->tagName,
-                            'url'         => $src,
+                            'url'         => $this->addUrlDomain($src, $source_url),
                             'description' => $description,
                         ];
                     }
@@ -786,12 +765,12 @@ class Transform {
                     if ($src) {
                         $description = trim($item->getAttribute('alt'));
                         $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                        $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                        $description = preg_replace('~[\s]{2,}~', ' ', $description);
                         $description = mb_strtolower($description);
 
                         $media[] = [
                             'type'        => $item->tagName,
-                            'url'         => $src,
+                            'url'         => $this->addUrlDomain($src, $source_url),
                             'description' => $description,
                         ];
                     }
@@ -804,12 +783,12 @@ class Transform {
                     if ($src) {
                         $description = trim($item->getAttribute('alt'));
                         $description = preg_replace('~&[A-z#0-9]+;~', ' ', $description);
-                        $description = preg_replace('~[ ]{2,}~', ' ', $description);
+                        $description = preg_replace('~[\s]{2,}~', ' ', $description);
                         $description = mb_strtolower($description);
 
                         $media[] = [
                             'type'        => $item->tagName,
-                            'url'         => $src,
+                            'url'         => $this->addUrlDomain($src, $source_url),
                             'description' => $description,
                         ];
                     }
@@ -818,6 +797,37 @@ class Transform {
         }
 
         return $media;
+    }
+
+
+    /**
+     * @param Crawler     $dom
+     * @param string      $rule
+     * @param string|null $source_url
+     * @return string
+     */
+    private function getImage(Crawler $dom, string $rule, string $source_url = null): string {
+
+        $elements  = $this->filter($dom, $rule);
+        $image_src = "";
+
+        if ($elements->count() > 0 && strtolower($elements->nodeName() == 'img')) {
+            $image_src = trim($elements->attr('src') ?? '');
+        }
+
+        if ($image_src) {
+            if ( ! $this->getDomain($image_src) && ! empty($source_url)) {
+                $domain = $this->getDomain($source_url);
+                $scheme = $this->getScheme($source_url);
+
+                if ($domain) {
+                    $image_src = ltrim($image_src, '/');
+                    $image_src = "{$scheme}://{$domain}/{$image_src}";
+                }
+            }
+        }
+
+        return $image_src;
     }
 
 
@@ -840,6 +850,28 @@ class Transform {
 
         $parse_url = parse_url($url);
         return $parse_url['scheme'] ?? 'http';
+    }
+
+
+    /**
+     * Добавление домена к адресу
+     * @param string $src
+     * @param string $source_url
+     * @return string
+     */
+    public function addUrlDomain(string $src, string $source_url): string {
+
+        if ( ! $this->getDomain($src) && ! empty($source_url)) {
+            $domain = $this->getDomain($source_url);
+            $scheme = $this->getScheme($source_url);
+
+            if ($domain) {
+                $src = ltrim($src, '/');
+                $src = "{$scheme}://{$domain}/{$src}";
+            }
+        }
+
+        return $src;
     }
 
 

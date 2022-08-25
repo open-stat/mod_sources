@@ -22,6 +22,7 @@ CREATE TABLE `mod_sources_pages` (
     `source_id` int unsigned NOT NULL,
     `title` varchar(1000) DEFAULT NULL,
     `url` varchar(500) DEFAULT NULL,
+    `image` varchar(500) DEFAULT NULL,
     `source_domain` varchar(128) DEFAULT NULL,
     `source_url` varchar(500) DEFAULT NULL,
     `source_author` varchar(255) DEFAULT NULL,
@@ -64,16 +65,20 @@ CREATE TABLE `mod_sources_contents_raw` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `source_id` int unsigned NOT NULL,
     `domain` varchar(255) DEFAULT NULL,
-    `status` enum('pending','process','complete') NOT NULL DEFAULT 'pending',
     `url` varchar(255) NOT NULL,
-    `content` longtext NOT NULL,
+    `status` enum('pending','process','complete','error')NOT NULL DEFAULT 'pending',
+    `content_type` enum('html','json','text') DEFAULT 'html',
+    `section_name` varchar(255) DEFAULT NULL,
+    `content` longtext CHARACTER SET utf8 NOT NULL,
     `options` json DEFAULT NULL,
+    `note` varchar(255) DEFAULT NULL,
     `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `url` (`url`),
     KEY `status` (`status`),
-    KEY `source_id` (`source_id`)
+    KEY `source_id` (`source_id`),
+    KEY `domain` (`domain`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `mod_sources_pages_media` (
