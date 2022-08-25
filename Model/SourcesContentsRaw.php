@@ -36,14 +36,14 @@ class SourcesContentsRaw extends \Zend_Db_Table_Abstract {
 
 
     /**
-     * @param string $domain
-     * @param int    $limit
+     * @param int $source_id
+     * @param int $limit
      * @return Zend_Db_Table_Rowset_Abstract
      */
-    public function getRowsPendingByDomain(string $domain, int $limit = 1000): \Zend_Db_Table_Rowset_Abstract {
+    public function getRowsPendingBySourceId(int $source_id, int $limit = 1000): \Zend_Db_Table_Rowset_Abstract {
 
         $select = $this->select()
-            ->where("domain = ?", $domain)
+            ->where("source_id = ?", $source_id)
             ->where("status = 'pending'")
             ->limit($limit);
 

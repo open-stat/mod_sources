@@ -20,6 +20,7 @@ class Model extends \Common {
      * @throws \PHPHtmlParser\Exceptions\NotLoadedException
      * @throws \PHPHtmlParser\Exceptions\StrictException
      * @throws \Zend_Config_Exception
+     * @throws \Exception
      */
     public function testSite(string $rules, array $options = []): string {
 
@@ -28,8 +29,28 @@ class Model extends \Common {
         $file_name = $this->config->temp . '/' . 'text_rules.ini';
         file_put_contents($file_name, $rules);
 
-        $config = new \Zend_Config_Ini($file_name);
-        $site   = new Sources\Index\Site($config->source);
+        $config          = new \Zend_Config_Ini($file_name);
+        $source_sections = $config->toArray();
+        $config_section  = [];
+
+        foreach ($source_sections as $section_name_raw => $section) {
+            if (mb_strpos($section_name_raw, 'data__') === 0) {
+
+                if ( ! ($section['active'] ?? true)) {
+                    continue;
+                }
+
+                $config_section = $section;
+                break;
+            }
+        }
+
+        if (empty($config_section)) {
+            throw new \Exception('Не найдены активные разделы');
+        }
+
+        $site = new Sources\Index\Site($config_section);
+
 
         // загрузка одной страницы
         if ( ! empty($options['option_page_url'])) {
@@ -72,7 +93,7 @@ class Model extends \Common {
         }
         echo '</pre>';
 
-        if ($config->source->selectors->page) {
+        if ( ! empty($config_section['page'])) {
             echo "<h4 class=\"text-muted\" style=\"cursor: pointer\" onclick=\"$(this).next().toggle()\">Обработанные данные - {$pages_count}</h4>";
             echo '<pre style="max-width: 1000px;white-space: break-spaces;">';
             foreach ($pages as $page) {

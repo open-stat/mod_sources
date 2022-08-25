@@ -43,7 +43,7 @@ class ModSourcesController extends Common {
                     ? (new \DateTime($page->date_publish))->format('d.m.Y H:i:s')
                     : 'не указано';
 
-                $description = "{$source->domain} / {$date_publish}";
+                $description = "{$source->title} / {$date_publish}";
 
 
                 $panel->setTitle($page->title, $description, $base_url);

@@ -25,22 +25,15 @@ class Transform {
 
 
     /**
-     * @param string $start_url
-     * @param string $tags
-     * @param string $regions
+     * @param string      $title
+     * @param string|null $tags
+     * @param string|null $regions
      * @return array
-     * @throws \Exception
      */
     #[ArrayShape(['domain' => "string", 'tags' => "array", 'regions' => "array"])]
-    public function getSource(string $start_url, string $tags = '', string $regions = ''): array {
+    public function getSource(string $title, string $tags = null, string $regions = null): array {
 
-        $domain = $this->getDomain($start_url);
-
-        if ( ! $domain) {
-            throw new \Exception(sprintf('На ресурсе %s не удалось выделить домен из адреса. Проверьте правила параметр start_url', $start_url));
-        }
-
-        $tags    = $tags   ? explode(',', $tags) : [];
+        $tags    = $tags    ? explode(',', $tags) : [];
         $regions = $regions ? explode(',', $regions) : [];
 
         foreach ($tags as $key => $tag) {
@@ -56,7 +49,7 @@ class Transform {
         }
 
         return [
-            'domain'  => $domain,
+            'title'   => $title,
             'tags'    => $tags,
             'regions' => $regions,
         ];
@@ -163,33 +156,27 @@ class Transform {
      * @param string $content
      * @param array  $rules
      * @param array  $options
-     * @return string[]
-     * @throws \PHPHtmlParser\Exceptions\ChildNotFoundException
-     * @throws \PHPHtmlParser\Exceptions\CircularException
-     * @throws \PHPHtmlParser\Exceptions\ContentLengthException
-     * @throws \PHPHtmlParser\Exceptions\LogicalException
-     * @throws \PHPHtmlParser\Exceptions\StrictException
+     * @return array
      */
     public function parsePage(string $content, array $rules, array $options = []): array {
 
-        $dom = new Crawler($content);
+        $dom  = new Crawler($content);
+        $page = [
+            'title'         => '',
+            'content'       => '',
+            'date_publish'  => '',
+            'count_views'   => '',
+            'author'        => '',
+            'source_domain' => '',
+            'source_url'    => '',
+            'region'        => [],
+            'categories'    => [],
+            'tags'          => [],
+            'media'         => [],
+            'references'    => [],
+        ];
 
         try {
-            $page = [
-                'title'         => '',
-                'content'       => '',
-                'date_publish'  => '',
-                'count_views'   => '',
-                'author'        => '',
-                'source_domain' => '',
-                'source_url'    => '',
-                'region'        => [],
-                'categories'    => [],
-                'tags'          => [],
-                'media'         => [],
-                'references'    => [],
-            ];
-
             if ( ! empty($rules['title'])) {
                 $page['title'] = $this->getTitle($dom, $rules['title']);
             }
@@ -236,17 +223,7 @@ class Transform {
                 $page['references'] = $this->getReferences($dom, $rules['content'], $options['url'] ?? null);
             }
 
-            if ( ! empty($rules['media'])) {
-                $media = $this->getMedia($dom, $rules['media']);
-
-                if ( ! empty($media)) {
-                    foreach ($media as $media_item) {
-                        $page['media'][] = $media_item;
-                    }
-                }
-            }
-
-
+            // Удаление одинаковых ссылок
             if ( ! empty($page['media'])) {
                 foreach ($page['media'] as $key => $media_item) {
                     foreach ($page['media'] as $key2 => $media_item2) {
@@ -595,7 +572,7 @@ class Transform {
     private function getSourceUrl(Crawler $dom, string $rule): string {
 
         $item = $this->filter($dom, $rule);
-        return $item->count() > 0 ? $item->attr('href') : '';
+        return (string)($item->count() > 0 ? $item->attr('href') : '');
     }
 
 
@@ -608,9 +585,12 @@ class Transform {
 
         $item = $this->filter($dom, $rule);
 
-        $title = $item->count() > 0 ? $item->text() : '';
+        $title = $item->count() > 0 ? $item->html() : '';
+        $title = strip_tags($title);
         $title = preg_replace('~&[A-z#0-9]+;~', ' ', $title);
+        $title = preg_replace('~ ~', ' ', $title);
         $title = preg_replace('~[ ]{2,}~', ' ', $title);
+        $title = trim($title);
 
         return $title;
     }
@@ -639,7 +619,7 @@ class Transform {
 
         $elements = $this->filter($dom, $rule);
 
-        $author = $elements->count() > 0 ? $elements->text() : '';
+        $author = $elements->count() > 0 ? $elements->html() : '';
         $author = strip_tags($author);
         $author = htmlspecialchars_decode($author);
         $author = preg_replace('~&[A-z#0-9]+;~', ' ', $author);
@@ -697,7 +677,10 @@ class Transform {
             $url = $content_link->getAttribute('href');
             $url = str_replace('&amp;', '&', $url);
 
-            if (preg_match('~\.(jpg|jpeg|png|gif|webp|mp4)$~', $url)) {
+
+            if (preg_match('~\.(jpg|jpeg|png|gif|webp|mp4)$~', $url) ||
+                preg_match('~^mailto:~', $url)
+            ) {
                 continue;
             }
 

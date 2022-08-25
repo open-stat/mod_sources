@@ -39,7 +39,7 @@ class View extends \Common {
                    sp.source_author,
                    sp.count_views,
                    sp.date_publish,
-                   s.domain
+                   s.title AS source_title
             
             FROM mod_sources_pages AS sp
                 JOIN mod_sources AS s ON sp.source_id = s.id
@@ -47,16 +47,16 @@ class View extends \Common {
             ORDER BY sp.date_publish DESC
         ");
 
-        $table->addFilter("CONCAT_WS('|', sp.title, s.domain)", $table::FILTER_TEXT, $this->_("Заголовок, источник"));
+        $table->addFilter("CONCAT_WS('|', sp.title, s.title)", $table::FILTER_TEXT, $this->_("Заголовок, источник"));
         $table->addFilter("spc.content", $table::FILTER_TEXT, $this->_("Содержимое"));
 
-        $table->addSearch($this->_("Источник"),         "s.domain",        $table::SEARCH_TEXT);
+        $table->addSearch($this->_("Источник"),         "s.title",         $table::SEARCH_TEXT);
         $table->addSearch($this->_("Дата публикации"),  "sp.date_publish", $table::SEARCH_DATE);
         $table->addSearch($this->_("Заголовок"),        "sp.title",        $table::SEARCH_TEXT);
         $table->addSearch($this->_("Просмотров"),       "sp.count_views",  $table::SEARCH_TEXT);
 
 
-        $table->addColumn($this->_("Источник"),        'domain',        $table::COLUMN_TEXT, 120);
+        $table->addColumn($this->_("Источник"),        'source_title',  $table::COLUMN_TEXT, 120);
         $table->addColumn($this->_("Дата публикации"), 'date_publish',  $table::COLUMN_DATETIME, 130);
         $table->addColumn($this->_("Заголовок"),       'title',         $table::COLUMN_TEXT);
         $table->addColumn($this->_("Автор"),           'source_author', $table::COLUMN_NUMBER, 160);

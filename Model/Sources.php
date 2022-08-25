@@ -10,13 +10,13 @@ class Sources extends \Zend_Db_Table_Abstract {
 
 
     /**
-     * @param string $source_domain
+     * @param string $source_title
      * @return Zend_Db_Table_Row_Abstract|null
      */
-    public function getRowByDomain(string $source_domain):? \Zend_Db_Table_Row_Abstract {
+    public function getRowByTitle(string $source_title):? \Zend_Db_Table_Row_Abstract {
 
         $select = $this->select()
-            ->where("domain = ?", $source_domain);
+            ->where("title = ?", $source_title);
 
         return $this->fetchRow($select);
     }

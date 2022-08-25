@@ -13,11 +13,11 @@ class Loader extends \Common {
      */
     public function saveSource(array $source): int {
 
-        $source_row = $this->modSources->dataSources->getRowByDomain($source['domain']);
+        $source_row = $this->modSources->dataSources->getRowByTitle($source['title']);
 
         if (empty($source_row)) {
             $source_row = $this->modSources->dataSources->createRow([
-                'domain' => $source['domain'],
+                'title'  => $source['title'],
                 'tags'   => implode(', ', $source['tags']),
                 'region' => implode(', ', $source['regions']),
             ]);
@@ -31,22 +31,24 @@ class Loader extends \Common {
     /**
      * @param int    $source_id
      * @param string $url
-     * @param string $content
+     * @param array  $content
      * @param array  $options
      * @return void
      */
-    public function saveSourceContent(int $source_id, string $url, string $content, array $options = []): void {
+    public function saveSourceContent(int $source_id, string $url, array $content, array $options = []): void {
 
         $content_row = $this->modSources->dataSourcesContentsRaw->getRowByUrl($url);
 
         // todo возможно следует добавлять версию 2..n
         if (empty($content_row)) {
             $content_row = $this->modSources->dataSourcesContentsRaw->createRow([
-                'source_id' => $source_id,
-                'domain'    => parse_url($url)['host'] ?? null,
-                'url'       => $url,
-                'content'   => $content,
-                'options'   => json_encode($options),
+                'source_id'    => $source_id,
+                'domain'       => parse_url($url)['host'] ?? null,
+                'url'          => $url,
+                'content_type' => $content['content_type'] ?? 'html',
+                'section_name' => $content['section_name'] ?? null,
+                'content'      => $content['content'],
+                'options'      => json_encode($options),
             ]);
             $content_row->save();
         }
@@ -56,12 +58,17 @@ class Loader extends \Common {
     /**
      * @param int   $source_id
      * @param array $page
-     * @return bool
+     * @return void
+     * @throws \Exception
      */
-    public function savePage(int $source_id, array $page): bool {
+    public function savePage(int $source_id, array $page): void {
 
-        if (empty($page['url']) || empty($page['title'])) {
-            return false;
+        if (empty($page['url'])) {
+            throw new \Exception('Отсутствует адрес страницы');
+        }
+
+        if (empty($page['title'])) {
+            throw new \Exception("Отсутствует заголовок страницы: {$page['url']}");
         }
 
 
@@ -72,7 +79,7 @@ class Loader extends \Common {
             if (empty($page_row)) {
                 $page_row = $this->modSources->dataSourcesPages->createRow([
                     'source_id'     => $source_id,
-                    'title'         => $page['title'],
+                    'title'         => trim($page['title']),
                     'url'           => $page['url'],
                     'source_domain' => $page['source_domain'] ?? null,
                     'source_url'    => $page['source_url'] ?? null,
@@ -205,10 +212,7 @@ class Loader extends \Common {
             $this->db->rollback();
             echo $e->getMessage();
 
-            return false;
+            throw $e;
         }
-
-
-        return true;
     }
 }

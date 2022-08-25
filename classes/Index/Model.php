@@ -23,13 +23,18 @@ class Model {
                 if ($item->getExtension() === 'ini') {
                     $name = substr($item->getFilename(), 0, -4);
 
-                    $config = new \Zend_Config_Ini($item->getPathname());
-                    $config->readOnly();
+                    try {
+                        $config = new \Zend_Config_Ini($item->getPathname());
+                        $config->readOnly();
 
-                    if (isset($configs[$name])) {
-                        $configs[$name . '_' . crc32($item->getPathname())] = $config->source;
-                    } else {
-                        $configs[$name] = $config->source;
+                        if (isset($configs[$name])) {
+                            $configs[$name . '_' . crc32($item->getPathname())] = $config;
+                        } else {
+                            $configs[$name] = $config;
+                        }
+
+                    } catch (\Exception $e) {
+                        echo $e->getMessage() . PHP_EOL;
                     }
                 }
             }
