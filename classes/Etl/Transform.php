@@ -318,6 +318,28 @@ class Transform {
         }
 
 
+        if ( ! empty($page['tags']) &&
+             ! empty($clear_rules['tags']) &&
+             ! empty($clear_rules['tags']['cut'])
+        ) {
+
+            @preg_match($clear_rules['tags']['cut'], '');
+            if (preg_last_error() != PREG_NO_ERROR) {
+                echo "Error author regular expr: {$clear_rules['tags']['cut']}". PHP_EOL;
+
+            } else {
+                foreach ($page['tags'] as $k => $tag) {
+                    if (preg_match($clear_rules['tags']['cut'], $tag, $match)) {
+                        $match_tag = ! empty($match['tag']) ? $match['tag'] : '';
+                        if ($match_tag) {
+                            $page['tags'][$k] = trim($match_tag);
+                        }
+                    }
+                }
+            }
+        }
+
+
         if ( ! empty($page['region']) && ! empty($clear_rules['region'])) {
 
             @preg_match($clear_rules['region'], '');
@@ -813,6 +835,10 @@ class Transform {
 
         if ($elements->count() > 0 && strtolower($elements->nodeName() == 'img')) {
             $image_src = trim($elements->attr('src') ?? '');
+
+            if (preg_match('~^data:image~', $image_src)) {
+                $image_src = '';
+            }
         }
 
         if ($image_src) {
@@ -913,6 +939,6 @@ class Transform {
      */
     private function isXpath(string $rule): bool {
 
-        return mb_strpos($rule, 'xpath:') === 0;
+        return mb_strpos($rule, '//') === 0;
     }
 }

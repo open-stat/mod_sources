@@ -68,7 +68,7 @@ class Site {
 
         foreach ($pages_item as $k => $page_item) {
             if (isset($this->config['encoding']) && $this->config['encoding']) {
-                $pages_item[$k]['content'] = iconv($this->config['encoding'], 'utf-8', $page_item['content']);
+                //$pages_item[$k]['content'] = iconv($this->config['encoding'], 'utf-8', $page_item['content']);
             }
         }
 
