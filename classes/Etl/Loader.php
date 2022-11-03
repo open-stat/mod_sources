@@ -47,7 +47,7 @@ class Loader extends \Common {
                 'url'          => $url,
                 'content_type' => $content['content_type'] ?? 'html',
                 'section_name' => $content['section_name'] ?? null,
-                'content'      => $content['content'],
+                'content'      => gzcompress($content['content'], 9),
                 'options'      => json_encode($options),
             ]);
             $content_row->save();

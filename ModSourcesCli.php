@@ -192,7 +192,7 @@ class ModSourcesCli extends Common {
                                 $page_raw->save();
 
                                 $site = new Sources\Index\Site($section);
-                                $page = $site->parsePage($page_raw->url, $page_raw->content);
+                                $page = $site->parsePage($page_raw->url, gzuncompress($page_raw->content));
 
 
                                 if (empty($page['title']) && ! empty($page_options['title']))               { $page['title'] = $page_options['title']; }
@@ -231,6 +231,25 @@ class ModSourcesCli extends Common {
                     }
                 }
             }
+        }
+    }
+
+
+    public function zipContent() {
+
+        $pages_id = $this->db->fetchCol("
+            SELECT id
+            FROM mod_sources_contents_raw
+            WHERE is_zip_sw IS NULL
+        ");
+
+
+        foreach ($pages_id as $page_id) {
+
+            $page = $this->modSources->dataSourcesContentsRaw->find($page_id)->current();
+            $page->content   = gzcompress($page->content, 9);
+            $page->is_zip_sw = 1;
+            $page->save();
         }
     }
 }
