@@ -129,6 +129,35 @@ class ModSourcesCli extends Common {
     }
 
 
+    /**
+     * Работа с телеграм
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadSourcesTg() {
+
+        $tg = new Sources\Index\Telegram();
+//        print_r($tg->account->getSelf());
+        echo '<pre>';
+        echo json_encode($tg->messages->getMessages('@yandex'));
+        echo '</pre>';
+
+
+        // Канал
+        // Категория
+        // постов сегодня
+        // постов за неделю
+        // постов за месяц
+        // Упоминания в других каналах
+        // Цитирования в других каналах
+        // Дата создания канала
+        // Подписчиков всего
+        // Подписчиков за сегодня
+        // Подписчиков за неделю
+        // Подписчиков за месяц
+        // Топ публикаций по просмотрам
+        // Топ публикаций по цитированию
+    }
 
 
     /**
@@ -312,6 +341,47 @@ class ModSourcesCli extends Common {
             }
         }
     }
+
+
+    /**
+     * Логин в телеграм клиенте. Отправка кода на телефон
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loginTgSendCode(): void {
+
+        $tg = new Sources\Index\Telegram();
+        $tg->account->loginPhone();
+    }
+
+
+    /**
+     * Логин в телеграм клиенте. Установка ранее отправленного кода
+     * @param string $code
+     * @return void
+     * @throws Zend_Config_Exception
+     * @throws Exception
+     */
+    public function loginTgSetCode(string $code): void {
+
+        $tg = new Sources\Index\Telegram();
+        $tg->account->completePhone($code);
+    }
+
+
+    /**
+     * Логин в телеграм клиенте. Установка ранее отправленного кода и пароля
+     * @param string $code
+     * @param string $password
+     * @return void
+     */
+    public function loginTgSetPassword(string $code, string $password): void {
+
+        $tg = new Sources\Index\Telegram();
+        $tg->account->complete2faLogin($code, $password);
+    }
+
+
     /**
      * Обработка информации
      * @throws \Exception
@@ -402,7 +472,7 @@ class ModSourcesCli extends Common {
 
                     } catch (\Exception $e) {
                         $page_raw->status = "error";
-                        $page_raw->note   = $e->getMessage();
+                        $page_raw->note   = mb_substr($e->getMessage(), 0, 250);
                         $page_raw->save();
                         
                         echo $e->getMessage() . PHP_EOL;
