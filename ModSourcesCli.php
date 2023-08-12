@@ -129,6 +129,189 @@ class ModSourcesCli extends Common {
     }
 
 
+
+
+    /**
+     * Загрузка топовых телеграмм каналов и групп
+     * @return void
+     * @throws Exception
+     */
+    public function loadTgTopChannels(): void {
+
+        $tg_stat = new Sources\Index\TgStat([
+            'debug_requests' => true,
+            'cache_dir'      => realpath(DOC_ROOT . "../tmp/tgstat")
+        ]);
+
+        $domains      = $tg_stat->getDomains() ?: $tg_stat->getDomainsDefault();
+        $top_domains  = [];
+        $top_channels = [
+            'members',
+            // 'members_t',
+            // 'members_y',
+            // 'members_7d',
+            'members_30d',
+            'reach',
+            'ci',
+        ];
+        $top_groups = [
+            'members',
+            // 'members_t',
+            // 'members_y',
+            // 'members_7d',
+            'members_30d',
+            'msgs',
+            'mau',
+        ];
+
+        // Получение данных
+        foreach ($domains as $domain => $domain_title) {
+            $top_domains[$domain]['channels'] = $tg_stat->getTopChannels($domain, [ 'top_list' => $top_channels ]);
+            $top_domains[$domain]['groups']   = $tg_stat->getTopGroups($domain, [ 'top_list' => $top_groups ]);
+        }
+
+
+        // Сохранение
+        foreach ($top_domains as $domain => $top_domain) {
+
+            // Каналы
+            foreach ($top_domain['channels'] as $category) {
+
+                foreach ($category['tops'] as $top => $channels) {
+
+                    foreach ($channels as $channel) {
+                        if (empty($channel['name'])) {
+                            continue;
+                        }
+
+                        $messenger = $this->modSources->dataSourcesMessengers->getRowByPeerType($channel['name'], 'channel', 'tg');
+
+                        if (empty($messenger)) {
+                            $tgstat = [
+                                $top => [
+                                    'subscribers_count' => $channel['subscribers_count'] ?? null,
+                                    'reach_count'       => $channel['reach_count'] ?? null,
+                                    'index_citation'    => $channel['index_citation'] ?? null,
+                                    'date_update'       => date('Y-m-d'),
+                                ],
+                            ];
+
+                            $messenger = $this->modSources->dataSourcesMessengers->createRow([
+                                'messenger_type'    => 'tg',
+                                'type'              => 'channel',
+                                'peer_name'         => $channel['name'],
+                                'title'             => $channel['title'],
+                                'subscribers_count' => strpos($top, 'members_') === 0 ? $channel['subscribers_count'] : '',
+                                'geolocation'       => $domains[$domain],
+                                'tgstat'            => json_encode($tgstat),
+                            ]);
+                            $messenger->save();
+
+                        } else {
+                            $tgstat = $messenger->tgstat ? json_decode($messenger->tgstat, true) : null;
+                            $tgstat = is_array($tgstat) ? $tgstat : [];
+
+                            $tgstat[$top]['subscribers_count'] = $channel['subscribers_count'] ?? null;
+                            $tgstat[$top]['reach_count']       = $channel['reach_count'] ?? null;
+                            $tgstat[$top]['index_citation']    = $channel['index_citation'] ?? null;
+                            $tgstat[$top]['date_update']       = date('Y-m-d');
+
+                            $messenger->tgstat = json_encode($tgstat);
+                            $messenger->save();
+                        }
+
+
+                        $category_row = $this->modSources->dataSourcesMessengersCategories->getRowByTitle($channel['category_title']);
+                        if (empty($category_row)) {
+                            $category_row = $this->modSources->dataSourcesMessengersCategories->createRow([
+                                'title' => $channel['category_title'],
+                            ]);
+                            $category_row->save();
+                        }
+
+                        $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->getRowByMessengerCategory($messenger->id, $category_row->id);
+
+                        if ( ! $link_category) {
+                            $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->createRow([
+                                'messenger_id' => $messenger->id,
+                                'category_id'  => $category_row->id,
+                            ]);
+                            $link_category->save();
+                        }
+                    }
+                }
+            }
+
+
+            // Группы
+            foreach ($top_domain['groups'] as $category) {
+
+                foreach ($category['tops'] as $top => $groups) {
+
+                    foreach ($groups as $group) {
+                        if (empty($group['name'])) {
+                            continue;
+                        }
+
+                        $messenger = $this->modSources->dataSourcesMessengers->getRowByPeerType($group['name'], 'group', 'tg');
+
+                        if (empty($messenger)) {
+                            $tgstat = [
+                                $top => [
+                                    'subscribers_count' => $channel['subscribers_count'] ?? null,
+                                    'messages_7d_count' => $channel['messages_7d_count'] ?? null,
+                                    'mau_count'         => $channel['mau_count'] ?? null,
+                                    'date_update'       => date('Y-m-d'),
+                                ],
+                            ];
+
+                            $messenger = $this->modSources->dataSourcesMessengers->createRow([
+                                'messenger_type'    => 'tg',
+                                'type'              => 'group',
+                                'peer_name'         => $group['name'],
+                                'title'             => $group['title'],
+                                'subscribers_count' => strpos($top, 'members_') === 0 ? $group['subscribers_count'] : '',
+                                'geolocation'       => $domains[$domain],
+                                'tgstat'            => json_encode($tgstat),
+                            ]);
+                            $messenger->save();
+
+                        } else {
+                            $tgstat = $messenger->tgstat ? json_decode($messenger->tgstat, true) : null;
+                            $tgstat = is_array($tgstat) ? $tgstat : [];
+
+                            $tgstat[$top]['subscribers_count'] = $channel['subscribers_count'] ?? null;
+                            $tgstat[$top]['messages_7d_count'] = $channel['messages_7d_count'] ?? null;
+                            $tgstat[$top]['mau_count']         = $channel['mau_count'] ?? null;
+                            $tgstat[$top]['date_update']       = date('Y-m-d');
+
+                            $messenger->tgstat = json_encode($tgstat);
+                            $messenger->save();
+                        }
+
+
+                        $category_row = $this->modSources->dataSourcesMessengersCategories->getRowByTitle($group['category_title']);
+                        if (empty($category_row)) {
+                            $category_row = $this->modSources->dataSourcesMessengersCategories->createRow([
+                                'title' => $group['category_title'],
+                            ]);
+                            $category_row->save();
+                        }
+
+                        $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->getRowByMessengerCategory($messenger->id, $category_row->id);
+
+                        if ( ! $link_category) {
+                            $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->createRow([
+                                'messenger_id' => $messenger->id,
+                                'category_id'  => $category_row->id,
+                            ]);
+                            $link_category->save();
+                        }
+                    }
+                }
+            }
+        }
+    }
     /**
      * Обработка информации
      * @throws \Exception
