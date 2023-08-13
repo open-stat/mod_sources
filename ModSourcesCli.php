@@ -213,9 +213,9 @@ class ModSourcesCli extends Common {
                             continue;
                         }
 
-                        $messenger = $this->modSources->dataSourcesMessengers->getRowByPeerType($channel['name'], 'channel', 'tg');
+                        $chat = $this->modSources->dataSourcesChats->getRowByTgChannelPeer($channel['name']);
 
-                        if (empty($messenger)) {
+                        if (empty($chat)) {
                             $tgstat = [
                                 $top => [
                                     'subscribers_count' => $channel['subscribers_count'] ?? null,
@@ -225,19 +225,23 @@ class ModSourcesCli extends Common {
                                 ],
                             ];
 
-                            $messenger = $this->modSources->dataSourcesMessengers->createRow([
+                            $subscribers_count = strpos($top, 'members_') === false && ! empty($channel['subscribers_count'])
+                                ? (int)$channel['subscribers_count']
+                                : null;
+
+                            $chat = $this->modSources->dataSourcesChats->createRow([
                                 'messenger_type'    => 'tg',
                                 'type'              => 'channel',
                                 'peer_name'         => $channel['name'],
                                 'title'             => $channel['title'],
-                                'subscribers_count' => strpos($top, 'members_') === 0 ? $channel['subscribers_count'] : '',
+                                'subscribers_count' => $subscribers_count,
                                 'geolocation'       => $domains[$domain],
                                 'tgstat'            => json_encode($tgstat),
                             ]);
-                            $messenger->save();
+                            $chat->save();
 
                         } else {
-                            $tgstat = $messenger->tgstat ? json_decode($messenger->tgstat, true) : null;
+                            $tgstat = $chat->tgstat ? json_decode($chat->tgstat, true) : null;
                             $tgstat = is_array($tgstat) ? $tgstat : [];
 
                             $tgstat[$top]['subscribers_count'] = $channel['subscribers_count'] ?? null;
@@ -245,24 +249,23 @@ class ModSourcesCli extends Common {
                             $tgstat[$top]['index_citation']    = $channel['index_citation'] ?? null;
                             $tgstat[$top]['date_update']       = date('Y-m-d');
 
-                            $messenger->tgstat = json_encode($tgstat);
-                            $messenger->save();
+                            $chat->tgstat = json_encode($tgstat);
+                            $chat->save();
                         }
 
 
-                        $category_row = $this->modSources->dataSourcesMessengersCategories->getRowByTitle($channel['category_title']);
+                        $category_row = $this->modSources->dataSourcesChatsCategories->getRowByTitle($channel['category_title']);
                         if (empty($category_row)) {
-                            $category_row = $this->modSources->dataSourcesMessengersCategories->createRow([
+                            $category_row = $this->modSources->dataSourcesChatsCategories->createRow([
                                 'title' => $channel['category_title'],
                             ]);
                             $category_row->save();
                         }
 
-                        $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->getRowByMessengerCategory($messenger->id, $category_row->id);
-
+                        $link_category = $this->modSources->dataSourcesChatsCategoriesLink->getRowByChatCategory($chat->id, $category_row->id);
                         if ( ! $link_category) {
-                            $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->createRow([
-                                'messenger_id' => $messenger->id,
+                            $link_category = $this->modSources->dataSourcesChatsCategoriesLink->createRow([
+                                'messenger_id' => $chat->id,
                                 'category_id'  => $category_row->id,
                             ]);
                             $link_category->save();
@@ -282,9 +285,9 @@ class ModSourcesCli extends Common {
                             continue;
                         }
 
-                        $messenger = $this->modSources->dataSourcesMessengers->getRowByPeerType($group['name'], 'group', 'tg');
+                        $chat = $this->modSources->dataSourcesChats->getRowByTgGroupPeer($group['name']);
 
-                        if (empty($messenger)) {
+                        if (empty($chat)) {
                             $tgstat = [
                                 $top => [
                                     'subscribers_count' => $channel['subscribers_count'] ?? null,
@@ -294,19 +297,23 @@ class ModSourcesCli extends Common {
                                 ],
                             ];
 
-                            $messenger = $this->modSources->dataSourcesMessengers->createRow([
+                            $subscribers_count = strpos($top, 'members_') === false && ! empty($channel['subscribers_count'])
+                                ? (int)$channel['subscribers_count']
+                                : null;
+
+                            $chat = $this->modSources->dataSourcesChats->createRow([
                                 'messenger_type'    => 'tg',
                                 'type'              => 'group',
                                 'peer_name'         => $group['name'],
                                 'title'             => $group['title'],
-                                'subscribers_count' => strpos($top, 'members_') === 0 ? $group['subscribers_count'] : '',
+                                'subscribers_count' => $subscribers_count,
                                 'geolocation'       => $domains[$domain],
                                 'tgstat'            => json_encode($tgstat),
                             ]);
-                            $messenger->save();
+                            $chat->save();
 
                         } else {
-                            $tgstat = $messenger->tgstat ? json_decode($messenger->tgstat, true) : null;
+                            $tgstat = $chat->tgstat ? json_decode($chat->tgstat, true) : null;
                             $tgstat = is_array($tgstat) ? $tgstat : [];
 
                             $tgstat[$top]['subscribers_count'] = $channel['subscribers_count'] ?? null;
@@ -314,24 +321,23 @@ class ModSourcesCli extends Common {
                             $tgstat[$top]['mau_count']         = $channel['mau_count'] ?? null;
                             $tgstat[$top]['date_update']       = date('Y-m-d');
 
-                            $messenger->tgstat = json_encode($tgstat);
-                            $messenger->save();
+                            $chat->tgstat = json_encode($tgstat);
+                            $chat->save();
                         }
 
 
-                        $category_row = $this->modSources->dataSourcesMessengersCategories->getRowByTitle($group['category_title']);
+                        $category_row = $this->modSources->dataSourcesChatsCategories->getRowByTitle($group['category_title']);
                         if (empty($category_row)) {
-                            $category_row = $this->modSources->dataSourcesMessengersCategories->createRow([
+                            $category_row = $this->modSources->dataSourcesChatsCategories->createRow([
                                 'title' => $group['category_title'],
                             ]);
                             $category_row->save();
                         }
 
-                        $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->getRowByMessengerCategory($messenger->id, $category_row->id);
-
+                        $link_category = $this->modSources->dataSourcesChatsCategoriesLink->getRowByChatCategory($chat->id, $category_row->id);
                         if ( ! $link_category) {
-                            $link_category = $this->modSources->dataSourcesMessengersCategoriesLink->createRow([
-                                'messenger_id' => $messenger->id,
+                            $link_category = $this->modSources->dataSourcesChatsCategoriesLink->createRow([
+                                'messenger_id' => $chat->id,
                                 'category_id'  => $category_row->id,
                             ]);
                             $link_category->save();

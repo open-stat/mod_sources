@@ -4,9 +4,9 @@
 /**
  *
  */
-class SourcesMessengersCategories extends \Zend_Db_Table_Abstract {
+class SourcesChatsCategories extends \Zend_Db_Table_Abstract {
 
-	protected $_name = 'mod_sources_messengers_categories';
+	protected $_name = 'mod_sources_chats_categories';
 
     /**
      * @param string $title
