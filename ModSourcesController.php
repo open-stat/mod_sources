@@ -9,17 +9,28 @@ require_once 'classes/autoload.php';
 
 
 /**
- * @property \Sources                    $dataSources
- * @property \SourcesContentsRaw         $dataSourcesContentsRaw
- * @property \SourcesPages               $dataSourcesPages
- * @property \SourcesPagesContents       $dataSourcesPagesContents
- * @property \SourcesPagesMedia          $dataSourcesPagesMedia
- * @property \SourcesPagesReferences     $dataSourcesPagesReferences
- * @property \SourcesPagesTags           $dataSourcesPagesTags
- * @property \SourcesTags                $dataSourcesTags
- * @property \SourcesChats               $dataSourcesChats
- * @property \SourcesChatsCategories     $dataSourcesChatsCategories
- * @property \SourcesChatsCategoriesLink $dataSourcesChatsCategoriesLink
+ * @property \Sources                       $dataSources
+ * @property \SourcesContentsRaw            $dataSourcesContentsRaw
+ * @property \SourcesPages                  $dataSourcesPages
+ * @property \SourcesPagesContents          $dataSourcesPagesContents
+ * @property \SourcesPagesMedia             $dataSourcesPagesMedia
+ * @property \SourcesPagesReferences        $dataSourcesPagesReferences
+ * @property \SourcesPagesTags              $dataSourcesPagesTags
+ * @property \SourcesTags                   $dataSourcesTags
+ * @property \SourcesChats                  $dataSourcesChats
+ * @property \SourcesChatsCategories        $dataSourcesChatsCategories
+ * @property \SourcesChatsCategoriesLink    $dataSourcesChatsCategoriesLink
+ * @property \SourcesChatsContent           $dataSourcesChatsContent
+ * @property \SourcesChatsUsers             $dataSourcesChatsUsers
+ * @property \SourcesChatsReactions         $dataSourcesChatsReactions
+ * @property \SourcesChatsLinks             $dataSourcesChatsLinks
+ * @property \SourcesChatsHashtags          $dataSourcesChatsHashtags
+ * @property \SourcesChatsMessages          $dataSourcesChatsMessages
+ * @property \SourcesChatsMessagesReactions $dataSourcesChatsMessagesReactions
+ * @property \SourcesChatsMessagesFiles     $dataSourcesChatsMessagesFiles
+ * @property \SourcesChatsMessagesLinks     $dataSourcesChatsMessagesLinks
+ * @property \SourcesChatsMessagesReplies   $dataSourcesChatsMessagesReplies
+ * @property \SourcesChatsMessagesHashtag   $dataSourcesChatsMessagesHashtag
  */
 class ModSourcesController extends Common {
 

@@ -1,5 +1,6 @@
 <?php
 namespace Core2\Mod\Sources\Index\Telegram;
+use danog\MadelineProto\Exception;
 
 
 /**
@@ -9,37 +10,32 @@ class Messages extends Common {
 
 
     /**
-     * Получение сообщений в
+     * Получение истории сообщений по указанному каналу, группе, пользователю
      * @param string $peer_name
+     * @param array  $options
      * @return array
+     * @throws Exception
      */
-    public function getMessages(string $peer_name): array {
+    public function getHistory(string $peer_name, array $options = []): array {
 
-        $madeline_messages = $this->getMadeline()->messages->getHistory([
-            'peer'        => $peer_name,
-            'offset_id'   => 0,
-            'offset_date' => 0,
-            'add_offset'  => 0,
-            'limit'       => 100, //Количество постов, которые вернет клиент
-            'max_id'      => 0, //Максимальный id поста
-            'min_id'      => 0, //Минимальный id поста - использую для пагинации, при  0 возвращаются последние посты.
-            'hash'        => 0
-        ]);
+        $limit = $options['limit'] ?? 100;
+        $limit = $limit > 100 || $limit <= 0 ? 100 : $limit;
 
-        return $madeline_messages;
+        $offset_id = $options['offset_id'] ?? 0;
+        $offset_id = $offset_id < 0 ? 0 : $offset_id;
 
-        $messages = [];
+        $min_id = $options['min_id'] ?? 0;
+        $min_id = $min_id < 0 ? 0 : $min_id;
 
-        foreach(array_reverse($madeline_messages['messages']) as $message) {
-            $messages[] = [
-                'id'       => $message['id'],
-                'date'     => date('d.m.Y H:i:s', $message['date']),
-                'message'  => $message['message'],
-                'views'    => $message['views'],
-                'forwards' => $message['forwards'],
-            ];
-        }
-
-        return $messages;
+        return $this->getMadeline()->messages->getHistory(
+            peer: "@{$peer_name}",
+            offset_id: $offset_id,
+            offset_date: 0,
+            add_offset: 0,
+            limit: $limit,
+            max_id: 0,
+            min_id: $min_id,
+            hash: 0,
+        );
     }
 }

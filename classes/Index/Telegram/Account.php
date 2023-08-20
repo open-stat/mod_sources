@@ -1,6 +1,8 @@
 <?php
 namespace Core2\Mod\Sources\Index\Telegram;
 
+use danog\MadelineProto\Exception;
+
 /**
  *
  */
@@ -52,6 +54,7 @@ class Account extends Common {
      * @param string $code
      * @param string $password
      * @return array
+     * @throws Exception
      */
     public function complete2faLogin(string $code, string $password): array {
 
@@ -68,6 +71,7 @@ class Account extends Common {
      * @param string $bot_id
      * @param string $bot_username
      * @return array
+     * @throws Exception
      */
     public function startBot(string $bot_id, string $bot_username): array {
 
@@ -107,6 +111,7 @@ class Account extends Common {
     /**
      * Получение данных о текущем пользователе
      * @return array
+     * @throws Exception
      */
     public function getSelf(): array {
 

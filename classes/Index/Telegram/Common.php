@@ -7,7 +7,7 @@ use danog\MadelineProto\Exception;
 /**
  *
  */
-class Common extends \Common {
+abstract class Common extends \Common {
 
 
     private $settings     = [];
@@ -92,6 +92,7 @@ class Common extends \Common {
      * Остановка действующего IPС процесса для текущего пользователя.
      * Процесс запускается автоматически и служит для обслуживания постоянного соединения с телеграм
      * @return void
+     * @throws Exception
      */
     public function stopServer(): void {
 

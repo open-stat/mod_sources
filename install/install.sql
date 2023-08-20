@@ -111,21 +111,28 @@ CREATE TABLE `mod_sources_chats` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `messenger_type` enum('tg') NOT NULL,
   `type` enum('channel','group') NOT NULL,
-  `peer_name` varchar(255) NOT NULL,
-  `title` varchar(255) NOT NULL,
+  `peer_name` varchar(255) NULL DEFAULT NULL,
+  `peer_id` varchar(100) NULL DEFAULT NULL,
+  `title` varchar(255) NULL,
+  `description` varchar(500) DEFAULT NULL,
   `geolocation` varchar(255) DEFAULT NULL,
   `subscribers_count` int unsigned DEFAULT NULL,
-  `date_messenger_created` datetime DEFAULT NULL,
-  `last_message_id` int unsigned DEFAULT NULL,
-  `date_last_message` timestamp NULL DEFAULT NULL,
+  `date_state_info` datetime DEFAULT NULL,
+  `old_message_id` int unsigned DEFAULT NULL,
+  `new_message_id` int unsigned DEFAULT NULL,
+  `date_old_message` timestamp NULL DEFAULT NULL,
+  `date_new_message` timestamp NULL DEFAULT NULL,
+  `date_history_load` date DEFAULT NULL,
   `tgstat` json DEFAULT NULL,
+  `is_connect_sw` enum('Y','N') NOT NULL DEFAULT 'N',
   `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `title` (`title`),
   KEY `peer_name` (`peer_name`),
-  KEY `type` (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+  KEY `type` (`type`),
+  KEY `peer_id` (`peer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `mod_sources_chats_files` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -161,47 +168,128 @@ CREATE TABLE `mod_sources_chats_categories_link` (
     CONSTRAINT `fk2_mod_sources_chats_categories_link` FOREIGN KEY (`category_id`) REFERENCES `mod_sources_chats_categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `mod_sources_chats_users` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `type` enum ('user', 'bot') NOT NULL DEFAULT 'user',
+  `messenger_id` varchar(100) DEFAULT NULL,
+  `phone_number` varchar(100) NULL,
+  `first_name` varchar(100) NULL,
+  `last_name` varchar(100) NULL,
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `messenger_id` (`messenger_id`),
+  KEY `phone_number` (`phone_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_reactions` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `emoticon` varchar(10) NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `emoticon` (`emoticon`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_links` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `host` varchar(100) NOT NULL,
+    `url` varchar(1000) NOT NULL,
+    `title` varchar(500) NULL,
+    `description` text NULL,
+    PRIMARY KEY (`id`),
+    KEY `host` (`host`),
+    KEY `title` (`title`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_hashtags` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `hashtag` varchar(255) NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `host` (`hashtag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `mod_sources_chats_messages` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `chat_id` int unsigned NOT NULL,
     `messenger_id` int unsigned NOT NULL,
-    `type` enum ('msg', 'file') NOT NULL DEFAULT 'msg',
+    `type` enum('msg','file') NOT NULL DEFAULT 'msg',
     `viewed_count` int unsigned DEFAULT NULL,
     `repost_count` int unsigned DEFAULT NULL,
     `comments_count` int unsigned DEFAULT NULL,
-    `content` text NULL,
-    `meta_data` JSON NULL DEFAULT NULL,
+    `content` text,
+    `meta_data` json DEFAULT NULL,
     `date_messenger_edit` timestamp NULL DEFAULT NULL,
     `date_messenger_created` timestamp NULL DEFAULT NULL,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `messenger_id` (`messenger_id`),
-    CONSTRAINT `fk1_mod_sources_chats_messages` FOREIGN KEY (`messenger_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    KEY `chat_id` (`chat_id`),
+    CONSTRAINT `fk1_mod_sources_chats_messages` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_messages_files` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `content` longblob,
     `refid` int unsigned NOT NULL,
-    `filename` varchar(255) NOT NULL,
-    `filesize` int NOT NULL,
+    `filename` varchar(255) NULL,
+    `filesize` int NULL,
     `hash` varchar(128) NOT NULL,
     `type` varchar(20) DEFAULT NULL,
     `fieldid` varchar(255) DEFAULT NULL,
+    `media_type` varchar(255) DEFAULT NULL,
+    `meta_data` json DEFAULT NULL,
+    `is_load_sw` enum('Y','N') NOT NULL DEFAULT 'N',
     `thumb` longblob,
     PRIMARY KEY (`id`),
     KEY `refid` (`refid`),
+    KEY `is_load_sw` (`is_load_sw`),
+    KEY `media_type` (`media_type`),
     CONSTRAINT `fk1_mod_sources_chats_messages_files` FOREIGN KEY (`refid`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_messages_reactions` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `message_id` int unsigned NOT NULL,
-    `emoticon` varchar(10) NOT NULL,
+    `reaction_id` int unsigned NOT NULL,
     `count` int unsigned NOT NULL,
     PRIMARY KEY (`id`),
     KEY `message_id` (`message_id`),
-    CONSTRAINT `fk1_mod_sources_chats_messages_reactions` FOREIGN KEY (`message_id`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    KEY `reaction_id` (`reaction_id`),
+    CONSTRAINT `fk1_mod_sources_chats_messages_reactions` FOREIGN KEY (`message_id`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk2_mod_sources_chats_messages_reactions` FOREIGN KEY (`reaction_id`) REFERENCES `mod_sources_chats_reactions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_messages_replies` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `message_id` int unsigned NOT NULL,
+    `user_id` int unsigned NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `message_id` (`message_id`),
+    KEY `user_id` (`user_id`),
+    CONSTRAINT `fk1_mod_sources_chats_messages_replies` FOREIGN KEY (`message_id`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk2_mod_sources_chats_messages_replies` FOREIGN KEY (`user_id`) REFERENCES `mod_sources_chats_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_messages_links` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `message_id` int unsigned NOT NULL,
+    `link_id` int unsigned NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `message_id` (`message_id`),
+    KEY `link_id` (`link_id`),
+    CONSTRAINT `fk1_mod_sources_chats_messages_links` FOREIGN KEY (`message_id`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk2_mod_sources_chats_messages_links` FOREIGN KEY (`link_id`) REFERENCES `mod_sources_chats_links` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_messages_hashtags` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `message_id` int unsigned NOT NULL,
+    `hashtag_id` int unsigned NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `message_id` (`message_id`),
+    KEY `hashtag_id` (`hashtag_id`),
+    CONSTRAINT `fk1_mod_sources_chats_messages_hashtags` FOREIGN KEY (`message_id`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk2_mod_sources_chats_messages_hashtags` FOREIGN KEY (`hashtag_id`) REFERENCES `mod_sources_chats_hashtags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_subscribers` (
@@ -222,11 +310,13 @@ CREATE TABLE `mod_sources_chats_content` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `type` varchar(100) NOT NULL,
     `content` mediumtext NOT NULL,
-    `meta_data` json NULL DEFAULT NULL,
-    `is_parsed_sw` enum ('Y', 'N') NOT NULL DEFAULT 'N',
+    `meta_data` json DEFAULT NULL,
+    `hash` varchar(100) DEFAULT NULL,
+    `is_parsed_sw` enum('Y','N') NOT NULL DEFAULT 'N',
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `type` (`type`),
-    KEY `is_parsed_sw` (`is_parsed_sw`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+    KEY `is_parsed_sw` (`is_parsed_sw`),
+    KEY `hash` (`hash`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;

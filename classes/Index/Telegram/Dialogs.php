@@ -2,22 +2,22 @@
 namespace Core2\Mod\Sources\Index\Telegram;
 
 
+use danog\MadelineProto\Exception;
+
 /**
  *
  */
 class Dialogs extends Common {
 
 
-
     /**
      * Получение списка id диалогов
      * @return array
+     * @throws Exception
      */
     public function getDialogsId(): array {
 
-        $madeline = $this->getMadeline();
-
-        $result = $madeline->getFullDialogs();
+        $result = $this->getMadeline()->getFullDialogs();
 
         return array_keys((array)$result);
     }
@@ -26,12 +26,11 @@ class Dialogs extends Common {
     /**
      * Получение списка id групп
      * @return array
+     * @throws Exception
      */
     public function getGroupsId(): array {
 
-        $madeline = $this->getMadeline();
-
-        $dialogs = $madeline->getFullDialogs();
+        $dialogs = $this->getMadeline()->getFullDialogs();
         $groups  = [];
 
         foreach ((array)$dialogs as $dialog_id => $dialog) {
@@ -49,14 +48,13 @@ class Dialogs extends Common {
 
     /**
      * Получение всей информации о группе
-     * @param string $group_id
+     * @param string $dialog_id
      * @return array
+     * @throws Exception
      */
-    public function getGroupInfo(string $group_id): array {
+    public function getDialogInfo(string $dialog_id): array {
 
-        $madeline = $this->getMadeline();
-
-        return (array)$madeline->getPwrChat($group_id, true);
+        return $this->getMadeline()->getPwrChat($dialog_id, true);
     }
 
 
@@ -65,12 +63,11 @@ class Dialogs extends Common {
      * @param string $title
      * @param string $description
      * @return string|null
+     * @throws Exception
      */
     public function createGroup(string $title, string $description = ''):? string {
 
-        $madeline = $this->getMadeline();
-
-        $updates = $madeline->channels->createChannel(...[
+        $updates = $this->getMadeline()->channels->createChannel(...[
             'broadcast'  => false,
             'megagroup'  => true,
             'for_import' => false,
@@ -114,12 +111,11 @@ class Dialogs extends Common {
      * @param string $group_id
      * @param array  $users_id
      * @return array
+     * @throws Exception
      */
     public function inviteGroup(string $group_id, array $users_id): array {
 
-        $madeline = $this->getMadeline();
-
-        $update = $madeline->channels->inviteToChannel(...[
+        $update = $this->getMadeline()->channels->inviteToChannel(...[
             'channel' => $group_id,
             'users'   => $users_id
         ]);
@@ -135,6 +131,7 @@ class Dialogs extends Common {
      * @param array|null $rules
      * @param string     $rank
      * @return array
+     * @throws Exception
      */
     public function setGroupAdminRules(string $group_id, string $user_id, array $rules = null, string $rank = ''): array {
 
@@ -155,9 +152,7 @@ class Dialogs extends Common {
 
         $admin_rights['_'] = 'chatAdminRights';
 
-        $madeline = $this->getMadeline();
-
-        $update = $madeline->channels->editAdmin(...[
+        $update = $this->getMadeline()->channels->editAdmin(...[
             'channel'      => $group_id,
             'user_id'      => $user_id,
             'admin_rights' => $admin_rights,
@@ -173,6 +168,7 @@ class Dialogs extends Common {
      * @param string     $channel_name
      * @param array|null $options
      * @return array
+     * @throws Exception
      */
     public function getParticipants(string $channel_name, array $options = null): array {
 

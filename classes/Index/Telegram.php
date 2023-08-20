@@ -4,7 +4,7 @@ use Core2\Mod\Sources\Index\Telegram\Account;
 use Core2\Mod\Sources\Index\Telegram\Contacts;
 use Core2\Mod\Sources\Index\Telegram\Dialogs;
 use Core2\Mod\Sources\Index\Telegram\Messages;
-use danog\MadelineProto;
+use Core2\Mod\Sources\Index\Telegram\Updates;
 
 
 /**
@@ -12,6 +12,7 @@ use danog\MadelineProto;
  * @property Contacts contacts
  * @property Dialogs  dialogs
  * @property Messages messages
+ * @property Updates updates
  */
 class Telegram {
 
@@ -33,6 +34,7 @@ class Telegram {
                 'contacts' => new Contacts(),
                 'dialogs'  => new Dialogs(),
                 'messages' => new Messages(),
+                'updates'  => new Updates(),
                 default    => null,
             };
         }

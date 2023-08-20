@@ -1,6 +1,8 @@
 <?php
 namespace Core2\Mod\Sources\Index\Telegram;
 
+use danog\MadelineProto\Exception;
+
 /**
  *
  */
@@ -10,6 +12,7 @@ class Contacts extends Common {
     /**
      * Получение списка контактов
      * @return array
+     * @throws Exception
      */
     public function getContacts(): array {
 
@@ -24,6 +27,7 @@ class Contacts extends Common {
     /**
      * Получение списка контактов
      * @return array
+     * @throws Exception
      */
     public function getContactsId(): array {
 
@@ -41,6 +45,7 @@ class Contacts extends Common {
      * @param string $first_name
      * @param string $last_name
      * @return array
+     * @throws Exception
      */
     public function addContactById(string $user_id, string $first_name, string $last_name): array {
 
