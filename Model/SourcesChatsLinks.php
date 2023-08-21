@@ -22,6 +22,19 @@ class SourcesChatsLinks extends \Zend_Db_Table_Abstract {
 
 
     /**
+     * @param string $hash
+     * @return Zend_Db_Table_Row_Abstract|null
+     */
+    public function getRowByHash(string $hash):? \Zend_Db_Table_Row_Abstract {
+
+        return $this->fetchRow(
+            $this->select()
+                ->where("hash = ?", $hash)
+        );
+    }
+
+
+    /**
      * Сохранение ссылки
      * @param string     $url
      * @param array|null $options
@@ -29,7 +42,8 @@ class SourcesChatsLinks extends \Zend_Db_Table_Abstract {
      */
     public function saveLink(string $url, array $options = null): \Zend_Db_Table_Row_Abstract  {
 
-        $link = $this->getRowByUrl($url);
+        $hash = md5($url);
+        $link = $this->getRowByHash($hash);
 
         if (empty($link)) {
             $url_parts = $this->getUrlParts($url);
@@ -37,6 +51,7 @@ class SourcesChatsLinks extends \Zend_Db_Table_Abstract {
             $link = $this->createRow([
                 'host'        => $url_parts['host'] ?? null,
                 'url'         => $url,
+                'hash'        => $hash,
                 'type'        => $options['type'] ?? null,
                 'title'       => $options['title'] ?? null,
                 'description' => $options['description'] ?? null,

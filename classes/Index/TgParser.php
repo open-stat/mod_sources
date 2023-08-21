@@ -137,7 +137,10 @@ class TgParser extends \Common {
                                         is_string($entity['url'])
                                     ) {
                                         $source_link = $this->getLink($entity['url']);
-                                        $this->modSources->dataSourcesChatsMessagesLinks->saveLink($source_message->id, $source_link->id);
+                                        $this->modSources->dataSourcesChatsMessagesLinks->saveLink($source_message->id, $source_link->id, [
+                                            'offset' => $entity['offset'] ?? null,
+                                            'length' => $entity['length'] ?? null,
+                                        ]);
                                     }
                                 }
                             }
@@ -156,13 +159,13 @@ class TgParser extends \Common {
                                         case 'telegram_message': $type = 'tg_channel'; break;
                                         case 'telegram_channel': $type = 'tg_message'; break;
                                         case 'document':
-                                            if ( ! empty($message['media']['webpage']['type']['document']) &&
-                                                ! empty($message['media']['webpage']['type']['document']['mime_type'])
+                                            if ( ! empty($message['media']['webpage']['document']) &&
+                                                 ! empty($message['media']['webpage']['document']['mime_type'])
                                             ) {
-                                                if (strpos($message['media']['webpage']['type']['document']['mime_type'], 'video') === 0) {
+                                                if (strpos($message['media']['webpage']['document']['mime_type'], 'video') === 0) {
                                                     $type = 'video';
 
-                                                } else if (strpos($message['media']['webpage']['type']['document']['mime_type'], 'audio') === 0) {
+                                                } else if (strpos($message['media']['webpage']['document']['mime_type'], 'audio') === 0) {
                                                     $type = 'audio';
 
                                                 } else {
@@ -427,7 +430,8 @@ class TgParser extends \Common {
      */
     private function getLinks(string $text): array {
 
-        preg_match_all('~((:?http://|https://)?(:?www)?(:?[\da-z\.-]+)\.(:?[a-z\.]{2,6})(:?[/\w\.-\?\%\&\+\-]*)*\/?)~iu', $text, $matches);
+        //preg_match_all('~((:?http://|https://)?(:?www)?(:?[\da-z\.-]+)\.(:?[a-z\.]{2,6})(:?[/\w\.-\?\%\&\+\-]*)*\/?)~iu', $text, $matches);
+        preg_match_all('~((ftp|http|https):\/\/)?(www\.)?([A-Za-zА-Яа-я0-9]{1}[A-Za-zА-Яа-я0-9\-]*\.?)+\.{1}[A-Za-zА-Яа-я-]{2,8}(\/([\[\]\(\)\{\}\|\w\#\~\'\!\;\:\.\,\?\+\*\=\&\%\@\!\-\/])*)?~miu', $text, $matches);
 
         $links = [];
 

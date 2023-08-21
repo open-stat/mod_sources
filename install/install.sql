@@ -193,12 +193,17 @@ CREATE TABLE `mod_sources_chats_links` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `host` varchar(100) NOT NULL,
     `url` varchar(1000) NOT NULL,
-    `title` varchar(500) NULL,
-    `description` text NULL,
+    `type` enum('document','audio','photo','video','tg_channel','tg_message') DEFAULT NULL,
+    `hash` varchar(100) DEFAULT NULL,
+    `title` varchar(750) DEFAULT NULL,
+    `description` text,
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `host` (`host`),
-    KEY `title` (`title`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    KEY `title` (`title`),
+    KEY `hash` (`hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_hashtags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -274,6 +279,8 @@ CREATE TABLE `mod_sources_chats_messages_links` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `message_id` int unsigned NOT NULL,
     `link_id` int unsigned NOT NULL,
+    `offset` int unsigned NULL,
+    `length` int unsigned NULL,
     PRIMARY KEY (`id`),
     KEY `message_id` (`message_id`),
     KEY `link_id` (`link_id`),

@@ -420,7 +420,7 @@ class ModSourcesCli extends Common {
             $this->modSources->dataSourcesChats->select()
                 ->where("messenger_type = 'tg'")
                 ->where("is_connect_sw = 'Y'")
-                ->order("peer_id IS NULL DESC")
+                ->order(new \Zend_Db_Expr('peer_id IS NULL DESC'))
                 ->order("date_state_info ASC")
         );
 
@@ -453,8 +453,8 @@ class ModSourcesCli extends Common {
                     $chat->save();
 
                     $this->modSources->dataSourcesChatsContent->saveContent('tg_dialogs_info', $dialog, [
-                        'peer_id'   => $dialog['id'],
-                        'peer_name' => $dialog['username'],
+                        'peer_id'   => $dialog['id'] ?? null,
+                        'peer_name' => $dialog['username'] ?? null,
                     ]);
                 }
             } catch (\Exception $e) {
@@ -467,7 +467,7 @@ class ModSourcesCli extends Common {
                 }
             }
 
-            sleep(30);
+            sleep(60);
         }
     }
 

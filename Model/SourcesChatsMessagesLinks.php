@@ -25,11 +25,12 @@ class SourcesChatsMessagesLinks extends \Zend_Db_Table_Abstract {
 
     /**
      * Сохранение ссылки
-     * @param int $message_id
-     * @param int $link_id
+     * @param int        $message_id
+     * @param int        $link_id
+     * @param array|null $options
      * @return Zend_Db_Table_Row_Abstract
      */
-    public function saveLink(int $message_id, int $link_id): \Zend_Db_Table_Row_Abstract  {
+    public function saveLink(int $message_id, int $link_id, array $options = null): \Zend_Db_Table_Row_Abstract  {
 
         $link = $this->getRowByMessageUrl($message_id, $link_id);
 
@@ -37,6 +38,8 @@ class SourcesChatsMessagesLinks extends \Zend_Db_Table_Abstract {
             $link = $this->createRow([
                 'message_id' => $message_id,
                 'link_id'    => $link_id,
+                'offset'    => $options['offset'] ?? null,
+                'length'    => $options['length'] ?? null,
             ]);
 
             $link->save();
