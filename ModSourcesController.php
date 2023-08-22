@@ -25,6 +25,8 @@ require_once 'classes/autoload.php';
  * @property \SourcesChatsReactions         $dataSourcesChatsReactions
  * @property \SourcesChatsLinks             $dataSourcesChatsLinks
  * @property \SourcesChatsHashtags          $dataSourcesChatsHashtags
+ * @property \SourcesChatsFiles             $dataSourcesChatsFiles
+ * @property \SourcesChatsSubscribers       $dataSourcesChatsSubscribers
  * @property \SourcesChatsMessages          $dataSourcesChatsMessages
  * @property \SourcesChatsMessagesReactions $dataSourcesChatsMessagesReactions
  * @property \SourcesChatsMessagesFiles     $dataSourcesChatsMessagesFiles

@@ -15,7 +15,7 @@ class TgParser extends \Common {
 
 
     /**
-     * Обработка истории
+     * Обработка сохраненной истории
      * @param int $limit
      * @return void
      */
@@ -277,41 +277,111 @@ class TgParser extends \Common {
 
 
     /**
+     * Обработка сохраненных обновлений
      * @param int $limit
      * @return void
      */
     public function processUpdates(int $limit = 100): void {
 
-        $history = $this->modSources->dataSourcesChatsContent->fetchAll(
+        $updates = $this->modSources->dataSourcesChatsContent->fetchAll(
             $this->modSources->dataSourcesChatsContent->select()
-                ->where("type = 'tg_dialogs_info'")
+                ->where("type = 'tg_updates'")
                 ->where("is_parsed_sw = 'N'")
-                ->order('id DESC')
+                ->order('id ASC')
                 ->limit($limit)
         );
 
-        foreach ($history as $item) {
+        foreach ($updates as $update) {
 
         }
     }
 
 
     /**
+     * Обработка сохраненных данных о чатах
      * @param int $limit
      * @return void
      */
     public function processDialogInfo(int $limit = 100): void {
 
-        $history = $this->modSources->dataSourcesChatsContent->fetchAll(
+        $contents = $this->modSources->dataSourcesChatsContent->fetchAll(
             $this->modSources->dataSourcesChatsContent->select()
                 ->where("type = 'tg_dialogs_info'")
                 ->where("is_parsed_sw = 'N'")
-                ->order('id DESC')
+                ->order('id ASC')
                 ->limit($limit)
         );
 
-        foreach ($history as $item) {
+        foreach ($contents as $content_item) {
+            $this->db->beginTransaction();
+            try {
+                $content = json_decode($content_item->content, true);
 
+                $type = ! empty($content['type']) && $content['type'] === 'channel'
+                    ? 'channel'
+                    : 'group';
+
+                if ($type == 'channel') {
+                    $chat = ! empty($content['id'])
+                        ? $this->modSources->dataSourcesChats->getRowByTgChannelPeerId($content['id'])
+                        : null;
+
+                    if (empty($chat) && ! empty($content['username'])) {
+                        $chat = $this->modSources->dataSourcesChats->getRowByTgChannelPeer($content['username']);
+                    }
+
+                } else {
+                    $chat = ! empty($content['id'])
+                        ? $this->modSources->dataSourcesChats->getRowByTgGroupPeerId($content['id'])
+                        : null;
+
+                    if (empty($chat) && ! empty($content['username'])) {
+                        $chat = $this->modSources->dataSourcesChats->getRowByTgGroupPeer($content['username']);
+                    }
+                }
+
+                if (empty($chat)) {
+                    $chat_name = ! empty($content['username'])
+                        ? $content['username']
+                        : ( ! empty($content['id']) ? $content['id'] : 'название не найдено');
+
+                    throw new \Exception("Чат не найден: {$chat_name}");
+                }
+
+
+                if ( ! empty($content['photo']) &&
+                     ! empty($content['photo']['sizes']) &&
+                    is_array($content['photo']['sizes'])
+                ) {
+                    foreach ($content['photo']['sizes'] as $size) {
+                        if ( ! empty($size['inflated']) && ! empty($size['inflated']['bytes'])) {
+
+                            $logo = base64_decode($size['inflated']['bytes']);
+                            $this->modSources->dataSourcesChatsFiles->saveLogo($chat->id, $logo, $content['photo']);
+                            break;
+                        }
+                    }
+                }
+
+                if ( ! empty($content['participants_count'])) {
+                    $meta_data = json_decode($content_item->meta_data, true);
+                    $date_day  = ! empty($meta_data['date'])
+                        ? new \DateTime($meta_data['date'])
+                        : new \DateTime($content_item->date_created);
+
+                    $this->modSources->dataSourcesChatsSubscribers->saveDayQuantity($chat->id, $date_day, $content['participants_count']);
+                }
+
+                $content_item->is_parsed_sw = 'Y';
+                $content_item->save();
+
+                $this->db->commit();
+
+            } catch (\Exception $e) {
+                $this->db->rollback();
+                echo $e->getMessage() . PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+            }
         }
     }
 

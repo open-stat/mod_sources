@@ -455,6 +455,7 @@ class ModSourcesCli extends Common {
                     $this->modSources->dataSourcesChatsContent->saveContent('tg_dialogs_info', $dialog, [
                         'peer_id'   => $dialog['id'] ?? null,
                         'peer_name' => $dialog['username'] ?? null,
+                        'date'      => date('Y-m-d H:i:s'),
                     ]);
                 }
             } catch (\Exception $e) {
@@ -671,7 +672,7 @@ class ModSourcesCli extends Common {
         $tg_parser = new Sources\Index\TgParser();
 
         $tg_parser->processHistory(100);
-//        $tg_parser->processDialogInfo(100);
+        $tg_parser->processDialogInfo(100);
 //        $tg_parser->processUpdates(100);
     }
 
@@ -713,130 +714,5 @@ class ModSourcesCli extends Common {
 
         $tg = new Sources\Index\Telegram();
         $tg->account->complete2faLogin($code, $password);
-    }
-
-
-    /**
-     * Обработка информации
-     * @throws \Exception
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     */
-    public function parseSources() {
-
-        $configs      = (new Sources\Index\Model())->getConfigs();
-        $test_sources = [
-            //'relax.by'
-        ];
-
-        if ($configs) {
-            $loader = new Sources\Etl\Loader();
-
-            $this->modSources->dataSourcesContentsRaw->refreshStatusRows();
-
-            foreach ($configs as $name => $config) {
-
-                if ( ! empty($test_sources) && ! in_array($name, $test_sources)) {
-                    continue;
-                }
-
-                if ( ! $config?->source || ! $config->source?->title) {
-                    continue;
-                }
-
-                $source = $this->modSources->dataSources->getRowByTitle($config->source->title);
-
-                if (empty($source)) {
-                    continue;
-                }
-
-                $pages_raw    = $this->modSources->dataSourcesContentsRaw->getRowsPendingBySourceId($source->id);
-                $count_errors = 0;
-
-                foreach ($pages_raw as $page_raw) {
-                    try {
-                        $section_name    = $page_raw->section_name ?: 'main';
-                        $source_sections = $config->toArray();
-                        $section         = $source_sections["data__{$section_name}"] ?? [];
-
-                        if (empty($section)) {
-                            throw new \Exception("В конфигурации {$name} не найден раздел [data__{$section_name}]");
-                        }
-
-                        $page_options = $page_raw->options ? json_decode($page_raw->options, true) : [];
-
-                        switch ($page_raw->content_type) {
-                            case 'html':
-                                if (empty($section['page']) ||
-                                    empty($section['page']['title']) ||
-                                    empty($section['page']['content']) ||
-                                    empty($section['page']['date_publish'])
-                                ) {
-                                    continue 2;
-                                }
-
-
-                                $page_raw->status = 'process';
-                                $page_raw->save();
-
-                                $site = new Sources\Index\Site($section);
-                                $page = $site->parsePage($page_raw->url, gzuncompress($page_raw->content));
-
-
-                                if (empty($page['title']) && ! empty($page_options['title']))               { $page['title'] = $page_options['title']; }
-                                if (empty($page['count_views']) && ! empty($page_options['count_views']))   { $page['count_views'] = $page_options['count_views']; }
-                                if (empty($page['date_publish']) && ! empty($page_options['date_publish'])) { $page['date_publish'] = $page_options['date_publish']; }
-                                if (empty($page['tags']) && ! empty($page_options['tags']))                 { $page['tags'] = $page_options['tags']; }
-                                if (empty($page['categories']) && ! empty($page_options['categories']))     { $page['categories'] = $page_options['categories']; }
-                                if (empty($page['region']) && ! empty($page_options['region']))             { $page['region'] = $page_options['region']; }
-                                if (empty($page['image']) && ! empty($page_options['image']))               { $page['image'] = $page_options['image']; }
-
-                                $loader->savePage($page_raw->source_id, $page);
-
-                                $page_raw->status = 'complete';
-                                $page_raw->note   = null;
-                                $page_raw->save();
-                                break;
-
-                            case 'json': break;
-                            case 'text': break;
-
-                            default:
-                                throw new \Exception("Неизвестный тип данных {$page_raw->content_type}");
-                        }
-
-                    } catch (\Exception $e) {
-                        $page_raw->status = "error";
-                        $page_raw->note   = mb_substr($e->getMessage(), 0, 250);
-                        $page_raw->save();
-                        
-                        echo $e->getMessage() . PHP_EOL;
-                        $count_errors++;
-
-                        if ($count_errors >= 3) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-    public function zipContent() {
-
-        $pages_id = $this->db->fetchCol("
-            SELECT id
-            FROM mod_sources_contents_raw
-            WHERE is_zip_sw IS NULL
-        ");
-
-
-        foreach ($pages_id as $page_id) {
-
-            $page = $this->modSources->dataSourcesContentsRaw->find($page_id)->current();
-            $page->content   = gzcompress($page->content, 9);
-            $page->is_zip_sw = 1;
-            $page->save();
-        }
     }
 }

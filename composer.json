@@ -3,7 +3,6 @@
   "require": {
     "symfony/css-selector": "v6.1.11",
     "symfony/dom-crawler": "v6.1.11",
-    "php-ai/php-ml": "0.*",
     "danog/madelineproto": "8.0.0-beta130"
   }
 }
