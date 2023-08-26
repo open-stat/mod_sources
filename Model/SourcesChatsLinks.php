@@ -42,6 +42,10 @@ class SourcesChatsLinks extends \Zend_Db_Table_Abstract {
      */
     public function saveLink(string $url, array $options = null): \Zend_Db_Table_Row_Abstract  {
 
+        if (mb_strlen($url) > 10000) {
+            $url = mb_substr($url, 0, 10000);
+        }
+
         $hash = md5($url);
         $link = $this->getRowByHash($hash);
 

@@ -52,7 +52,31 @@ class Dialogs extends Common {
      * @return array
      * @throws Exception
      */
+    public function getDialogInfoFull(string $dialog_id): array {
+
+        return $this->getMadeline()->getFullInfo($dialog_id);
+    }
+
+
+    /**
+     * Получение информации о группе
+     * @param string $dialog_id
+     * @return array
+     * @throws Exception
+     */
     public function getDialogInfo(string $dialog_id): array {
+
+        return $this->getMadeline()->getInfo($dialog_id);
+    }
+
+
+    /**
+     * Получение всей информации о группе
+     * @param string $dialog_id
+     * @return array
+     * @throws Exception
+     */
+    public function getDialogPwr(string $dialog_id): array {
 
         return $this->getMadeline()->getPwrChat($dialog_id, true);
     }

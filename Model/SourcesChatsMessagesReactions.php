@@ -42,6 +42,11 @@ class SourcesChatsMessagesReactions extends \Zend_Db_Table_Abstract {
             ]);
 
             $reaction->save();
+        } else {
+            if ($reaction->count != $reaction['count']) {
+                $reaction->count = $reaction['count'];
+                $reaction->save();
+            }
         }
 
         return $reaction;

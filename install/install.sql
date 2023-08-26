@@ -182,6 +182,17 @@ CREATE TABLE `mod_sources_chats_users` (
   KEY `phone_number` (`phone_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `mod_sources_chats_users_links` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `chat_id` int unsigned NOT NULL,
+   `user_id` int unsigned NOT NULL,
+   PRIMARY KEY (`id`),
+   KEY `chat_id` (`chat_id`),
+   KEY `user_id` (`user_id`),
+   CONSTRAINT `fk1_mod_sources_chats_users_links` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+   CONSTRAINT `fk2_mod_sources_chats_users_links` FOREIGN KEY (`user_id`) REFERENCES `mod_sources_chats_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `mod_sources_chats_reactions` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `emoticon` varchar(10) NOT NULL,
@@ -304,8 +315,6 @@ CREATE TABLE `mod_sources_chats_subscribers` (
    `messenger_id` int unsigned NOT NULL,
    `date_day` date NOT NULL,
    `quantity` int unsigned NOT NULL,
-   `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-   `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
    PRIMARY KEY (`id`),
    KEY `messenger_id` (`messenger_id`),
    KEY `date_day` (`date_day`),

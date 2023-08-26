@@ -8,6 +8,7 @@ require_once "classes/autoload.php";
 /**
  * @property ModSourcesController $modSources
  * @property ModProxyController   $modProxy
+ * @property ModCronController    $modCron
  */
 class ModSourcesCli extends Common {
 
@@ -399,7 +400,7 @@ class ModSourcesCli extends Common {
 
             if ( ! empty($updates)) {
                 $this->modSources->dataSourcesChatsContent->saveContent('tg_updates', $updates, [
-                    'max_update_id' => $update_id,
+                    'date'          => date('Y-m-d H:i:s'),
                     'count_updates' => count($updates),
                 ]);
             }
@@ -416,60 +417,75 @@ class ModSourcesCli extends Common {
      */
     public function loadTgPeersInfo(): void {
 
-        $chats = $this->modSources->dataSourcesChats->fetchAll(
+        $chat = $this->modSources->dataSourcesChats->fetchRow(
             $this->modSources->dataSourcesChats->select()
                 ->where("messenger_type = 'tg'")
-                ->where("is_connect_sw = 'Y'")
-                ->order(new \Zend_Db_Expr('peer_id IS NULL DESC'))
+                ->where("is_connect_sw = 'Y' OR peer_name IS NULL")
                 ->order("date_state_info ASC")
+                ->limit(1)
         );
 
 
         $tg = new Sources\Index\Telegram();
 
-        foreach ($chats as $chat) {
-            try {
-                $dialog_id = $chat->peer_id ?: $chat->peer_name;
-                $dialog    = $tg->dialogs->getDialogInfo($dialog_id);
+        try {
+            $dialog_id = $chat->peer_id ?: $chat->peer_name;
+            $dialog    = $tg->dialogs->getDialogPwr($dialog_id);
 
-                if ($dialog) {
-                    if ( ! $chat->peer_id && ! empty($dialog['id'])) {
-                        $chat->peer_id = $dialog['id'];
-                    }
-                    if ( ! empty($dialog['title'])) {
-                        $chat->title = $dialog['title'];
-                    }
-                    if ( ! empty($dialog['username'])) {
-                        $chat->peer_name = $dialog['username'];
-                    }
-                    if ( ! empty($dialog['participants_count'])) {
-                        $chat->subscribers_count = $dialog['participants_count'];
-                    }
-                    if ( ! empty($dialog['about'])) {
-                        $chat->description = $dialog['about'];
-                    }
-
-                    $chat->date_state_info = new \Zend_Db_Expr('NOW()');
-                    $chat->save();
-
-                    $this->modSources->dataSourcesChatsContent->saveContent('tg_dialogs_info', $dialog, [
-                        'peer_id'   => $dialog['id'] ?? null,
-                        'peer_name' => $dialog['username'] ?? null,
-                        'date'      => date('Y-m-d H:i:s'),
-                    ]);
+            if ($dialog) {
+                if ( ! $chat->peer_id && ! empty($dialog['id'])) {
+                    $chat->peer_id = $dialog['id'];
                 }
-            } catch (\Exception $e) {
-                echo "Chat: {$dialog_id}" .PHP_EOL;
-                echo $e->getMessage() .PHP_EOL;
-                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
-
-                if (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
-                    break;
+                if ( ! empty($dialog['title'])) {
+                    $chat->title = $dialog['title'];
                 }
+                if ( ! empty($dialog['username'])) {
+                    $chat->peer_name = $dialog['username'];
+                }
+                if ( ! empty($dialog['participants_count'])) {
+                    $chat->subscribers_count = $dialog['participants_count'];
+                }
+                if ( ! empty($dialog['about'])) {
+                    $chat->description = $dialog['about'];
+                }
+
+                $this->modSources->dataSourcesChatsContent->saveContent('tg_dialogs_info', $dialog, [
+                    'peer_id'   => $dialog['id'] ?? null,
+                    'peer_name' => $dialog['username'] ?? null,
+                    'date'      => date('Y-m-d H:i:s'),
+                ]);
             }
 
-            sleep(60);
+        } catch (\Exception $e) {
+            echo "Chat: {$dialog_id}" .PHP_EOL;
+            echo $e->getMessage() .PHP_EOL;
+            echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+            if (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
+                $ban_seconds = substr($e->getMessage(), strpos($e->getMessage(), 'FLOOD_WAIT_'));
+
+                if (is_numeric($ban_seconds)) {
+                    $cron_job = $this->modCron->dataCronJobs->fetchRow(
+                        $this->modCron->dataCronJobs->select()
+                            ->where("module_id = 'source'")
+                            ->where("module_method = ?", __FUNCTION__)
+                    );
+
+                    if ( ! empty($cron_job)) {
+                        $ban_seconds += 100;
+
+                        $cron_job->execute_type = 'limited';
+                        $cron_job->execute_from = date('Y-m-d H:i:s', strtotime("+ {$ban_seconds} seconds"));
+                        $cron_job->execute_to   = null;
+                        $cron_job->save();
+                    }
+                }
+            }
         }
+
+
+        $chat->date_state_info = new \Zend_Db_Expr('NOW()');
+        $chat->save();
     }
 
 
@@ -671,9 +687,9 @@ class ModSourcesCli extends Common {
 
         $tg_parser = new Sources\Index\TgParser();
 
-        $tg_parser->processHistory(100);
         $tg_parser->processDialogInfo(100);
-//        $tg_parser->processUpdates(100);
+        $tg_parser->processHistory(100);
+        $tg_parser->processUpdates(100);
     }
 
 

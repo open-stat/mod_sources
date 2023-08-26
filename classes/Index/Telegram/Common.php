@@ -10,10 +10,10 @@ use danog\MadelineProto\Exception;
 abstract class Common extends \Common {
 
 
-    private $settings     = [];
-    private $session_file = '';
+    private MadelineProto\Settings $settings;
+    private                        $session_file = '';
 
-    private static $madeline;
+    private static MadelineProto\API $madeline;
 
 
     /**
@@ -59,29 +59,25 @@ abstract class Common extends \Common {
             throw new \Exception(sprintf('В указанной директории запрещен доступ на запись: %s', dirname($session_file)));
         }
 
+        $this->settings = new MadelineProto\Settings();
 
-        $this->settings = [
-            'app_info'      => [
-                'api_id'   => (int)$api_id,
-                'api_hash' => $api_hash,
-            ],
-            'logger' => [
-                'logger' => MadelineProto\Logger::ECHO_LOGGER,
-            ],
-            'serialization' => [
-                'serialization_interval' => 30,
-                // 'cleanup_before_serialization' => true,
-            ],
-        ];
+        $this->settings->setAppInfo(
+            (new MadelineProto\Settings\AppInfo)
+                ->setApiId((int)$api_id)
+                ->setApiHash($api_hash)
+        );
+        $this->settings->setLogger(
+            (new MadelineProto\Settings\Logger())
+                ->setType(MadelineProto\Logger::ECHO_LOGGER)
+        );
 
         if ( ! empty($log_file)) {
-            //$_GET['cwd'] = dirname($log_file);
-
-            $this->settings['logger'] = [
-                'logger'       => MadelineProto\Logger::LOGGER_FILE,
-                'logger_level' => MadelineProto\Logger::WARNING,
-                'logger_param' => $log_file,
-            ];
+            $this->settings->setLogger(
+                (new MadelineProto\Settings\Logger())
+                    ->setType(MadelineProto\Logger::LOGGER_FILE)
+                    ->setLevel(MadelineProto\Logger::WARNING)
+                    ->setExtra($log_file)
+            );
         }
 
         $this->session_file = $session_file;
@@ -97,7 +93,20 @@ abstract class Common extends \Common {
     public function stopServer(): void {
 
         $madeline = $this->getMadeline();
-        $madeline->API->stopIpcServer();
+        $madeline->stop();
+    }
+
+
+    /**
+     * Остановка действующего IPС процесса для текущего пользователя.
+     * Процесс запускается автоматически и служит для обслуживания постоянного соединения с телеграм
+     * @return void
+     * @throws Exception
+     */
+    public function restartServer(): void {
+
+        $madeline = $this->getMadeline();
+        $madeline->restart();
     }
 
 

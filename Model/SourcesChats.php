@@ -30,6 +30,34 @@ class SourcesChats extends \Zend_Db_Table_Abstract {
      * @param string $peer_name
      * @return Zend_Db_Table_Row_Abstract|null
      */
+    public function getRowByTgPeer(string $peer_name):? \Zend_Db_Table_Row_Abstract {
+
+        return $this->fetchRow(
+            $this->select()
+                ->where("messenger_type = 'tg'")
+                ->where("peer_name = ?", $peer_name)
+        );
+    }
+
+
+    /**
+     * @param string $peer_id
+     * @return Zend_Db_Table_Row_Abstract|null
+     */
+    public function getRowByTgPeerId(string $peer_id):? \Zend_Db_Table_Row_Abstract {
+
+        return $this->fetchRow(
+            $this->select()
+                ->where("messenger_type = 'tg'")
+                ->where("peer_id = ?", $peer_id)
+        );
+    }
+
+
+    /**
+     * @param string $peer_name
+     * @return Zend_Db_Table_Row_Abstract|null
+     */
     public function getRowByTgChannelPeer(string $peer_name):? \Zend_Db_Table_Row_Abstract {
 
         return $this->fetchRow(
@@ -87,30 +115,26 @@ class SourcesChats extends \Zend_Db_Table_Abstract {
 
 
     /**
-     * @param int        $chat_id
-     * @param string     $type
-     * @param string     $messenger_type
-     * @param array|null $options
+     * @param string      $peer_id
+     * @param string|null $type
+     * @param string      $messenger_type
+     * @param array|null  $options
      * @return Zend_Db_Table_Row_Abstract
      */
-    public function saveChatId(int $chat_id, string $type = 'channel', string $messenger_type = 'tg', array $options = null): \Zend_Db_Table_Row_Abstract {
+    public function saveChatId(string $peer_id, string $type = null, string $messenger_type = 'tg', array $options = null): \Zend_Db_Table_Row_Abstract {
 
-        $chat = $type == 'channel'
-            ? $this->getRowByTgChannelPeerId($chat_id)
-            : $this->getRowByTgGroupPeerId($chat_id);
+        $chat = $this->getRowByTgPeerId($peer_id);
 
         if (empty($chat) && ! empty($options['peer_name'])) {
-            $chat = $type == 'channel'
-                ? $this->getRowByTgChannelPeer($options['peer_name'])
-                : $this->getRowByTgGroupPeer($options['peer_name']);
+            $chat = $this->getRowByTgPeer($options['peer_name']);
         }
 
 
         if (empty($chat)) {
             $chat = $this->createRow([
                 'messenger_type'    => $messenger_type,
-                'type'              => $type,
-                'peer_id'           => $chat_id,
+                'type'              => $type ?? null,
+                'peer_id'           => $peer_id,
                 'peer_name'         => $options['peer_name'] ?? null,
                 'title'             => $options['title'] ?? null,
                 'description'       => $options['description'] ?? null,
@@ -119,6 +143,37 @@ class SourcesChats extends \Zend_Db_Table_Abstract {
                 'is_connect_sw'     => $options['is_connect_sw'] ?? 'N',
             ]);
             $chat->save();
+        } else {
+            $is_save = false;
+
+            if (empty($chat->type) && ! empty($type)) {
+                $chat->type = $type;
+                $is_save = true;
+            }
+            if (empty($chat->peer_name) && ! empty($options['peer_name'])) {
+                $chat->peer_name = $options['peer_name'];
+                $is_save = true;
+            }
+            if (empty($chat->title) && ! empty($options['title'])) {
+                $chat->title = $options['title'];
+                $is_save = true;
+            }
+            if (empty($chat->description) && ! empty($options['description'])) {
+                $chat->description = $options['description'];
+                $is_save = true;
+            }
+            if (empty($chat->geolocation) && ! empty($options['geolocation'])) {
+                $chat->geolocation = $options['geolocation'];
+                $is_save = true;
+            }
+            if (empty($chat->subscribers_count) && ! empty($options['subscribers_count'])) {
+                $chat->subscribers_count = $options['subscribers_count'];
+                $is_save = true;
+            }
+
+            if ($is_save) {
+                $chat->save();
+            }
         }
 
         return $chat;
