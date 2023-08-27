@@ -31,16 +31,17 @@ class SourcesChatsContent extends \Zend_Db_Table_Abstract {
      */
     public function saveContent(string $type, array $content, array $meta_data): void {
 
-        $content      = json_encode($content, JSON_UNESCAPED_UNICODE);
-        $content_hash = md5($content);
-        $chat_content = $this->getRowByTypeHash($type, $content_hash);
+        $content          = json_encode($content, JSON_UNESCAPED_UNICODE);
+        $content_hash     = md5($content);
+        $content_compress = gzcompress($content, 9);
+        $chat_content     = $this->getRowByTypeHash($type, $content_hash);
 
         if (empty($chat_content)) {
             $chat_content = $this->createRow([
-                'type'      => $type,
-                'content'   => $content,
-                'hash'      => $content_hash,
-                'meta_data' => json_encode($meta_data, JSON_UNESCAPED_UNICODE),
+                'type'        => $type,
+                'content_bin' => $content_compress,
+                'hash'        => $content_hash,
+                'meta_data'   => json_encode($meta_data, JSON_UNESCAPED_UNICODE),
             ]);
             $chat_content->save();
         }

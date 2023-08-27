@@ -1,5 +1,5 @@
 <?php
-namespace Core2\Mod\Sources\Test;
+namespace Core2\Mod\Sources\Sites;
 use Core2\Classes\Table;
 
 
@@ -54,6 +54,7 @@ class View extends \Common {
         $table->addSearch($this->_("Дата публикации"),  "sp.date_publish", $table::SEARCH_DATE);
         $table->addSearch($this->_("Заголовок"),        "sp.title",        $table::SEARCH_TEXT);
         $table->addSearch($this->_("Просмотров"),       "sp.count_views",  $table::SEARCH_TEXT);
+        $table->addSearch($this->_("Ссылка"),           "sp.url",          $table::SEARCH_TEXT);
 
 
         $table->addColumn($this->_("Источник"),        'source_title',  $table::COLUMN_TEXT, 120);
@@ -73,6 +74,55 @@ class View extends \Common {
                 // Ссылка
                 $row->url->setAttr('onclick', "event.cancelBubble = true;");
                 $row->url = "<a href=\"{$row->url}\" class=\"btn btn-xs btn-default\" target=\"_blank\"><i class=\"fa fa-external-link\"></i></a>";
+            }
+        }
+
+        return $table;
+    }
+
+
+    /**
+     * @param string $base_url
+     * @return Table\Db
+     * @throws Table\Exception
+     * @throws \Zend_Db_Select_Exception
+     */
+    public function getTableSources(string $base_url): Table\Db {
+
+        $table = new Table\Db($this->resId);
+        $table->setTable("mod_sources_sites");
+        $table->setPrimaryKey('id');
+        $table->setRecordsPerPage(100);
+        $table->hideCheckboxes();
+
+        $table->setQuery("
+            SELECT s.id,
+                   s.title,
+                   s.region,
+                   s.tags,
+                   COUNT(sp.id) AS count_tags
+            
+            FROM mod_sources_sites AS s
+                LEFT JOIN mod_sources_sites_pages AS sp ON s.id = sp.source_id
+            GROUP BY s.id
+            ORDER BY s.date_created DESC
+        ");
+
+        $table->addFilter("s.title", $table::FILTER_TEXT, $this->_("Название"));
+
+
+        $table->addColumn($this->_("Название"),              'title',        $table::COLUMN_TEXT, 250);
+        $table->addColumn($this->_("Регион"),                'region',       $table::COLUMN_TEXT, 200);
+        $table->addColumn($this->_("Тэги"),                  'tags',         $table::COLUMN_TEXT);
+        $table->addColumn($this->_("Количество публикаций"), 'count_tags',   $table::COLUMN_NUMBER, 180);
+
+
+
+
+        $rows = $table->fetchRows();
+        if ( ! empty($rows)) {
+            foreach ($rows as $row) {
+
             }
         }
 
@@ -107,9 +157,9 @@ class View extends \Common {
 
         foreach ($page_tags as $page_tag) {
             switch ($page_tag->type) {
-                case 'tag':      $tags[]       = $page_tag->tag; break;
-                case 'category': $categories[] = $page_tag->tag; break;
-                case 'region':   $regions[]    = $page_tag->tag; break;
+                case 'tag':      $tags[]       = "<span class=\"label label-default\">{$page_tag->tag}</span>"; break;
+                case 'category': $categories[] = "<span class=\"label label-default\">{$page_tag->tag}</span>"; break;
+                case 'region':   $regions[]    = "<span class=\"label label-default\">{$page_tag->tag}</span>"; break;
             }
         }
 
@@ -139,9 +189,9 @@ class View extends \Common {
 
         $edit->addControl('Заголовок',              "TEXT",       'style="width:600px;"');
         $edit->addControl('Дата публикации',        "DATETIME2");
-        $edit->addControl('Категории',              "CUSTOM",     $categories ? implode(', ', $categories) : '');
-        $edit->addControl('Теги',                   "CUSTOM",     $tags ? implode(', ', $tags) : '');
-        $edit->addControl('Регион',                 "CUSTOM",     $regions ? implode(', ', $regions) : '');
+        $edit->addControl('Категории',              "CUSTOM",     $categories ? implode(' ', $categories) : '');
+        $edit->addControl('Теги',                   "CUSTOM",     $tags ? implode(' ', $tags) : '');
+        $edit->addControl('Регион',                 "CUSTOM",     $regions ? implode(' ', $regions) : '');
         $edit->addControl('Ссылка',                 "LINK",       'style="width:600px;"');
         $edit->addControl('Источник новости',       "TEXT",       'style="width:300px;"');
         $edit->addControl('Автор',                  "TEXT",       'style="width:300px;"');
@@ -154,16 +204,5 @@ class View extends \Common {
         $edit->save("xajax_savePage(xajax.getFormValues(this.id))");
 
         return $edit;
-    }
-
-
-    /**
-     * @return string
-     * @throws \Exception
-     */
-    public function getSiteContainer(): string {
-
-        $tpl = file_get_contents(__DIR__ . '/../../assets/test/html/container.html');
-        return str_replace('[MOD_SRC]', $this->getModuleSrc('sources'), $tpl);
     }
 }

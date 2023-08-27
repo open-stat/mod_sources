@@ -51,7 +51,7 @@ class Model extends \Common {
 
         $is_debug_requests = (bool)($options['debug_requests'] ?? false);
 
-        $site = new Sources\Index\Site($config_section, [
+        $site = new Sources\Sites\Site($config_section, [
             'debug_requests' => $is_debug_requests
         ]);
 

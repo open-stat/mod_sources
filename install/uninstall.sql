@@ -1,0 +1,25 @@
+DROP TABLE IF EXISTS `mod_sources_sites_pages_contents`;
+DROP TABLE IF EXISTS `mod_sources_sites_pages_media`;
+DROP TABLE IF EXISTS `mod_sources_sites_pages_references`;
+DROP TABLE IF EXISTS `mod_sources_sites_pages_tags`;
+DROP TABLE IF EXISTS `mod_sources_sites_pages`;
+DROP TABLE IF EXISTS `mod_sources_sites_tags`;
+DROP TABLE IF EXISTS `mod_sources_sites`;
+
+DROP TABLE IF EXISTS `mod_sources_chats_messages_files`;
+DROP TABLE IF EXISTS `mod_sources_chats_messages_hashtags`;
+DROP TABLE IF EXISTS `mod_sources_chats_messages_links`;
+DROP TABLE IF EXISTS `mod_sources_chats_messages_reactions`;
+DROP TABLE IF EXISTS `mod_sources_chats_messages_replies`;
+DROP TABLE IF EXISTS `mod_sources_chats_messages`;
+DROP TABLE IF EXISTS `mod_sources_chats_categories_link`;
+DROP TABLE IF EXISTS `mod_sources_chats_categories`;
+DROP TABLE IF EXISTS `mod_sources_chats_content`;
+DROP TABLE IF EXISTS `mod_sources_chats_files`;
+DROP TABLE IF EXISTS `mod_sources_chats_hashtags`;
+DROP TABLE IF EXISTS `mod_sources_chats_links`;
+DROP TABLE IF EXISTS `mod_sources_chats_subscribers`;
+DROP TABLE IF EXISTS `mod_sources_chats_reactions`;
+DROP TABLE IF EXISTS `mod_sources_chats_users_links`;
+DROP TABLE IF EXISTS `mod_sources_chats_users`;
+DROP TABLE IF EXISTS `mod_sources_chats`;

@@ -9,14 +9,15 @@ require_once 'classes/autoload.php';
 
 
 /**
- * @property \Sources                       $dataSources
- * @property \SourcesContentsRaw            $dataSourcesContentsRaw
- * @property \SourcesPages                  $dataSourcesPages
- * @property \SourcesPagesContents          $dataSourcesPagesContents
- * @property \SourcesPagesMedia             $dataSourcesPagesMedia
- * @property \SourcesPagesReferences        $dataSourcesPagesReferences
- * @property \SourcesPagesTags              $dataSourcesPagesTags
- * @property \SourcesTags                   $dataSourcesTags
+ * @property \SourcesSites                  $dataSources
+ * @property \SourcesSitesContentsRaw       $dataSourcesSitesContentsRaw
+ * @property \SourcesSitesPages             $dataSourcesSitesPages
+ * @property \SourcesSitesPagesContents     $dataSourcesSitesPagesContents
+ * @property \SourcesSitesPagesMedia        $dataSourcesSitesPagesMedia
+ * @property \SourcesSitesPagesReferences   $dataSourcesSitesPagesReferences
+ * @property \SourcesSitesPagesTags         $dataSourcesSitesPagesTags
+ * @property \SourcesSitesTags              $dataSourcesSitesTags
+ *                                                               
  * @property \SourcesChats                  $dataSourcesChats
  * @property \SourcesChatsCategories        $dataSourcesChatsCategories
  * @property \SourcesChatsCategoriesLink    $dataSourcesChatsCategoriesLink
@@ -41,21 +42,21 @@ class ModSourcesController extends Common {
      * @return string
      * @throws Exception
      */
-    public function action_index(): string {
+    public function action_sites(): string {
 
-        $base_url = 'index.php?module=sources&action=index';
-        $view     = new Sources\Index\View();
+        $base_url = 'index.php?module=sources&action=sites';
+        $view     = new Sources\Sites\View();
         $panel    = new Panel('tab');
         $content  = [];
 
         try {
             if ( ! empty($_GET['edit'])) {
-                $page = $this->dataSourcesPages->find($_GET['edit'])->current();
+                $page = $this->dataSourcesSitesPages->find($_GET['edit'])->current();
 
                 if (empty($page)) {
                     throw new Exception('Указанная страница не найдена');
                 }
-                $source = $this->dataSources->find($page->source_id)->current();
+                $source = $this->dataSourcesSites->find($page->source_id)->current();
                 $date_publish = $page->date_publish
                     ? (new \DateTime($page->date_publish))->format('d.m.Y H:i:s')
                     : 'не указано';

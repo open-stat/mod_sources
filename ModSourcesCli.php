@@ -19,14 +19,14 @@ class ModSourcesCli extends Common {
      */
     public function loadSources(): void {
 
-        $configs = (new Sources\Index\Model())->getConfigs();
+        $configs = (new Sources\Sites\Model())->getConfigs();
         $test_sources = [
 
         ];
 
         if ($configs) {
-            $transform = new Sources\Etl\Transform();
-            $loader    = new Sources\Etl\Loader();
+            $transform = new Sources\Sites\Etl\Transform();
+            $loader    = new Sources\Sites\Etl\Loader();
 
             foreach ($configs as $name => $config) {
 
@@ -75,7 +75,7 @@ class ModSourcesCli extends Common {
                                     }
 
 
-                                    $site = new Sources\Index\Site($section);
+                                    $site = new Sources\Sites\Site($section);
 
                                     $pages_list = $site->loadList();
                                     $pages_url  = [];
@@ -137,15 +137,15 @@ class ModSourcesCli extends Common {
      */
     public function parseSources(): void {
 
-        $configs      = (new Sources\Index\Model())->getConfigs();
+        $configs      = (new Sources\Sites\Model())->getConfigs();
         $test_sources = [
             //'relax.by'
         ];
 
         if ($configs) {
-            $loader = new Sources\Etl\Loader();
+            $loader = new Sources\Sites\Etl\Loader();
 
-            $this->modSources->dataSourcesContentsRaw->refreshStatusRows();
+            $this->modSources->dataSourcesSitesContentsRaw->refreshStatusRows();
 
             foreach ($configs as $name => $config) {
 
@@ -157,13 +157,13 @@ class ModSourcesCli extends Common {
                     continue;
                 }
 
-                $source = $this->modSources->dataSources->getRowByTitle($config->source->title);
+                $source = $this->modSources->dataSourcesSites->getRowByTitle($config->source->title);
 
                 if (empty($source)) {
                     continue;
                 }
 
-                $pages_raw    = $this->modSources->dataSourcesContentsRaw->getRowsPendingBySourceId($source->id);
+                $pages_raw    = $this->modSources->dataSourcesSitesContentsRaw->getRowsPendingBySourceId($source->id);
                 $count_errors = 0;
 
                 foreach ($pages_raw as $page_raw) {
@@ -192,7 +192,7 @@ class ModSourcesCli extends Common {
                                 $page_raw->status = 'process';
                                 $page_raw->save();
 
-                                $site = new Sources\Index\Site($section);
+                                $site = new Sources\Sites\Site($section);
                                 $page = $site->parsePage($page_raw->url, gzuncompress($page_raw->content));
 
 
@@ -265,7 +265,7 @@ class ModSourcesCli extends Common {
         $chat_date_old       = $chat->date_old_message ? new \DateTime($chat->date_old_message) : null;
         $chat_date_new       = $chat->date_new_message ? new \DateTime($chat->date_new_message) : null;
 
-        $tg     = new Sources\Index\Telegram();
+        $tg     = new Sources\Chats\Telegram();
         $result = $tg->messages->getHistory($chat->peer_name, [
             'offset_id' => (int)$chat_message_old_id,
         ]);
@@ -381,7 +381,7 @@ class ModSourcesCli extends Common {
 
         $update_id = $setting ? (int)$setting->value : 0;
 
-        $tg = new Sources\Index\Telegram();
+        $tg = new Sources\Chats\Telegram();
         $updates = $tg->updates->get($update_id + 1);
 
         if ( ! empty($updates)) {
@@ -426,7 +426,7 @@ class ModSourcesCli extends Common {
         );
 
 
-        $tg = new Sources\Index\Telegram();
+        $tg = new Sources\Chats\Telegram();
 
         try {
             $dialog_id = $chat->peer_id ?: $chat->peer_name;
@@ -496,7 +496,7 @@ class ModSourcesCli extends Common {
      */
     public function loadTgTopChannels(): void {
 
-        $tg_stat = new Sources\Index\TgStat([
+        $tg_stat = new Sources\Chats\TgStat([
             'debug_requests' => true,
             'cache_dir'      => realpath(DOC_ROOT . "../tmp/tgstat")
         ]);
@@ -685,7 +685,7 @@ class ModSourcesCli extends Common {
      */
     public function parsingTgContent(): void {
 
-        $tg_parser = new Sources\Index\TgParser();
+        $tg_parser = new Sources\Chats\TgParser();
 
         $tg_parser->processDialogInfo(100);
         $tg_parser->processHistory(100);
@@ -700,7 +700,7 @@ class ModSourcesCli extends Common {
      */
     public function loginTgSendCode(): void {
 
-        $tg = new Sources\Index\Telegram();
+        $tg = new Sources\Chats\Telegram();
         $tg->account->loginPhone();
     }
 
@@ -714,7 +714,7 @@ class ModSourcesCli extends Common {
      */
     public function loginTgSetCode(string $code): void {
 
-        $tg = new Sources\Index\Telegram();
+        $tg = new Sources\Chats\Telegram();
         $tg->account->completePhone($code);
     }
 
@@ -728,7 +728,7 @@ class ModSourcesCli extends Common {
      */
     public function loginTgSetPassword(string $code, string $password): void {
 
-        $tg = new Sources\Index\Telegram();
+        $tg = new Sources\Chats\Telegram();
         $tg->account->complete2faLogin($code, $password);
     }
 }
