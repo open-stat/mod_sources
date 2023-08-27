@@ -135,7 +135,7 @@ CREATE TABLE `mod_sources_chats` (
   KEY `peer_name` (`peer_name`),
   KEY `type` (`type`),
   KEY `peer_id` (`peer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_files` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -151,7 +151,7 @@ CREATE TABLE `mod_sources_chats_files` (
   PRIMARY KEY (`id`),
   KEY `refid` (`refid`),
   CONSTRAINT `fk1_mod_sources_chats_files` FOREIGN KEY (`refid`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_categories` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -159,7 +159,7 @@ CREATE TABLE `mod_sources_chats_categories` (
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_categories_link` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -170,7 +170,7 @@ CREATE TABLE `mod_sources_chats_categories_link` (
     KEY `category_id` (`category_id`),
     CONSTRAINT `fk1_mod_sources_chats_categories_link` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk2_mod_sources_chats_categories_link` FOREIGN KEY (`category_id`) REFERENCES `mod_sources_chats_categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_users` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -185,7 +185,7 @@ CREATE TABLE `mod_sources_chats_users` (
   PRIMARY KEY (`id`),
   KEY `messenger_id` (`messenger_id`),
   KEY `phone_number` (`phone_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_users_links` (
    `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -219,7 +219,7 @@ CREATE TABLE `mod_sources_chats_links` (
     KEY `host` (`host`),
     KEY `title` (`title`),
     KEY `hash` (`hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_hashtags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -231,11 +231,16 @@ CREATE TABLE `mod_sources_chats_hashtags` (
 CREATE TABLE `mod_sources_chats_messages` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `chat_id` int unsigned NOT NULL,
+    `user_id` int unsigned DEFAULT NULL,
+    `media_type` enum('document','photo','video','audio','webpage','other') DEFAULT NULL,
     `messenger_id` int unsigned NOT NULL,
-    `type` enum('msg','file') NOT NULL DEFAULT 'msg',
     `viewed_count` int unsigned DEFAULT NULL,
     `repost_count` int unsigned DEFAULT NULL,
     `comments_count` int unsigned DEFAULT NULL,
+    `reply_to_id` int unsigned DEFAULT NULL,
+    `fwd_chat_id` varchar(100) DEFAULT NULL,
+    `fwd_message_id` varchar(100) DEFAULT NULL,
+    `group_value` varchar(100) DEFAULT NULL,
     `content` text,
     `meta_data` json DEFAULT NULL,
     `date_messenger_edit` timestamp NULL DEFAULT NULL,
@@ -245,8 +250,12 @@ CREATE TABLE `mod_sources_chats_messages` (
     PRIMARY KEY (`id`),
     KEY `messenger_id` (`messenger_id`),
     KEY `chat_id` (`chat_id`),
-    CONSTRAINT `fk1_mod_sources_chats_messages` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+    KEY `group_value` (`group_value`),
+    KEY `media_type` (`media_type`),
+    KEY `user_id` (`user_id`),
+    CONSTRAINT `fk1_mod_sources_chats_messages` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk2_mod_sources_chats_messages` FOREIGN KEY (`user_id`) REFERENCES `mod_sources_chats_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_messages_files` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -266,7 +275,7 @@ CREATE TABLE `mod_sources_chats_messages_files` (
     KEY `is_load_sw` (`is_load_sw`),
     KEY `media_type` (`media_type`),
     CONSTRAINT `fk1_mod_sources_chats_messages_files` FOREIGN KEY (`refid`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_messages_reactions` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -302,7 +311,7 @@ CREATE TABLE `mod_sources_chats_messages_links` (
     KEY `link_id` (`link_id`),
     CONSTRAINT `fk1_mod_sources_chats_messages_links` FOREIGN KEY (`message_id`) REFERENCES `mod_sources_chats_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk2_mod_sources_chats_messages_links` FOREIGN KEY (`link_id`) REFERENCES `mod_sources_chats_links` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_messages_hashtags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -324,7 +333,7 @@ CREATE TABLE `mod_sources_chats_subscribers` (
    KEY `date_day` (`date_day`),
    KEY `chat_id` (`chat_id`),
    CONSTRAINT `fk1_mod_sources_chats_subscribers` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_content` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -339,4 +348,4 @@ CREATE TABLE `mod_sources_chats_content` (
     KEY `type` (`type`),
     KEY `is_parsed_sw` (`is_parsed_sw`),
     KEY `hash` (`hash`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;

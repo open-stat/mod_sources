@@ -47,10 +47,27 @@
                 </access>
             </sm>
             <sm>
+                <sm_id>video</sm_id>
+                <sm_name>Видео</sm_name>
+                <sm_path/>
+                <seq>3</seq>
+                <visible>N</visible>
+                <access>
+                    <default>
+                        <access>off</access>
+                        <list><all>off</all><owner>off</owner></list>
+                        <read><all>off</all><owner>off</owner></read>
+                        <edit><all>off</all><owner>off</owner></edit>
+                        <delete><all>off</all><owner>off</owner></delete>
+                    </default>
+                    <additional/>
+                </access>
+            </sm>
+            <sm>
                 <sm_id>test</sm_id>
                 <sm_name>Проверки источников</sm_name>
                 <sm_path/>
-                <seq>3</seq>
+                <seq>4</seq>
                 <visible>N</visible>
                 <access>
                     <default>

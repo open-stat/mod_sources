@@ -68,12 +68,12 @@ class SourcesChatsMessages extends \Zend_Db_Table_Abstract {
                 $source_message->content = $options['content'];
                 $is_save = true;
             }
-            if (($force_update || empty($source_message->fwd_chat_id)) && ! empty($options['fwd_chat_id'])) {
-                $source_message->fwd_chat_id = $options['fwd_chat_id'];
-                $is_save = true;
-            }
             if (($force_update || empty($source_message->reply_to_id)) && ! empty($options['reply_to_id'])) {
                 $source_message->reply_to_id = $options['reply_to_id'];
+                $is_save = true;
+            }
+            if (($force_update || empty($source_message->fwd_chat_id)) && ! empty($options['fwd_chat_id'])) {
+                $source_message->fwd_chat_id = $options['fwd_chat_id'];
                 $is_save = true;
             }
             if (($force_update || empty($source_message->fwd_message_id)) && ! empty($options['fwd_message_id'])) {
@@ -82,14 +82,6 @@ class SourcesChatsMessages extends \Zend_Db_Table_Abstract {
             }
             if (($force_update || empty($source_message->group_value)) && ! empty($options['group_value'])) {
                 $source_message->group_value = $options['group_value'];
-                $is_save = true;
-            }
-            if (($force_update || empty($source_message->date_messenger_created)) && ! empty($options['date_messenger_created'])) {
-                $source_message->date_messenger_created = $options['date_messenger_created'];
-                $is_save = true;
-            }
-            if (($force_update || empty($source_message->date_messenger_edit)) && ! empty($options['date_messenger_edit'])) {
-                $source_message->date_messenger_edit = $options['date_messenger_edit'];
                 $is_save = true;
             }
             if (($force_update || empty($source_message->comments_count)) && ! empty($options['comments_count'])) {
@@ -102,6 +94,14 @@ class SourcesChatsMessages extends \Zend_Db_Table_Abstract {
             }
             if (($force_update || empty($source_message->repost_count)) && ! empty($options['repost_count'])) {
                 $source_message->repost_count = $options['repost_count'];
+                $is_save = true;
+            }
+            if (($force_update || empty($source_message->date_messenger_created)) && ! empty($options['date_messenger_created'])) {
+                $source_message->date_messenger_created = $options['date_messenger_created'];
+                $is_save = true;
+            }
+            if (($force_update || empty($source_message->date_messenger_edit)) && ! empty($options['date_messenger_edit'])) {
+                $source_message->date_messenger_edit = $options['date_messenger_edit'];
                 $is_save = true;
             }
 
