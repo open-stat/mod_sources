@@ -430,7 +430,14 @@ class ModSourcesCli extends Common {
 
         try {
             $dialog_id = $chat->peer_id ?: $chat->peer_name;
-            $dialog    = $tg->dialogs->getDialogPwr($dialog_id);
+
+            try {
+                $dialog = $tg->dialogs->getDialogPwr($dialog_id);
+            } catch (\Exception $e) {
+                if ($e->getMessage() == 'CHANNEL_PRIVATE') {
+                    $dialog = $tg->dialogs->getDialogPwr($dialog_id, false);
+                }
+            }
 
             if ($dialog) {
                 if ( ! $chat->peer_id && ! empty($dialog['id'])) {
@@ -730,5 +737,32 @@ class ModSourcesCli extends Common {
 
         $tg = new Sources\Chats\Telegram();
         $tg->account->complete2faLogin($code, $password);
+    }
+
+
+    /**
+     * Получение необработанных телеграмм данных
+     * Не для планировщика
+     * @param int $row_id
+     * @return string|null
+     */
+    public function getContentRow(int $row_id):? string {
+
+        $row = $this->modSources->dataSourcesChatsContent->fetchRow(
+            $this->modSources->dataSourcesChatsContent->select()
+                ->where("id = ?", $row_id)
+        );
+
+        if (empty($row)) {
+            return 'Данные с таким id не найдены';
+        }
+
+        $content_bin = gzuncompress($row->content_bin);
+
+        echo '<pre>';
+        print_r(json_decode($content_bin, 1));
+        echo '</pre>';
+
+        return null;
     }
 }

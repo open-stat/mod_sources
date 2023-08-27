@@ -73,12 +73,13 @@ class Dialogs extends Common {
     /**
      * Получение всей информации о группе
      * @param string $dialog_id
+     * @param bool   $fullfetch
      * @return array
      * @throws Exception
      */
-    public function getDialogPwr(string $dialog_id): array {
+    public function getDialogPwr(string $dialog_id, bool $fullfetch = true): array {
 
-        return $this->getMadeline()->getPwrChat($dialog_id, true);
+        return $this->getMadeline()->getPwrChat($dialog_id, $fullfetch);
     }
 
 
