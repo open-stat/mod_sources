@@ -1,14 +1,26 @@
 <?php
-namespace Core2\Mod\Sources\Chats\Telegram;
+namespace Core2\Mod\Sources\Chats\Telegram\Api;
 
 
+use Core2\Mod\Sources\Chats\Telegram\Connection;
 use danog\MadelineProto\Exception;
 
 /**
  *
  */
-class Dialogs extends Common {
+class Dialogs {
 
+
+    private Connection $connection;
+
+
+    /**
+     * @param Connection $connection
+     */
+    public function __construct(Connection $connection) {
+
+        $this->connection = $connection;
+    }
 
     /**
      * Получение списка id диалогов
@@ -17,7 +29,7 @@ class Dialogs extends Common {
      */
     public function getDialogsId(): array {
 
-        $result = $this->getMadeline()->getFullDialogs();
+        $result = $this->connection->getMadeline()->getFullDialogs();
 
         return array_keys((array)$result);
     }
@@ -30,7 +42,7 @@ class Dialogs extends Common {
      */
     public function getGroupsId(): array {
 
-        $dialogs = $this->getMadeline()->getFullDialogs();
+        $dialogs = $this->connection->getMadeline()->getFullDialogs();
         $groups  = [];
 
         foreach ((array)$dialogs as $dialog_id => $dialog) {
@@ -54,7 +66,7 @@ class Dialogs extends Common {
      */
     public function getDialogInfoFull(string $dialog_id): array {
 
-        return $this->getMadeline()->getFullInfo($dialog_id);
+        return $this->connection->getMadeline()->getFullInfo($dialog_id);
     }
 
 
@@ -66,7 +78,7 @@ class Dialogs extends Common {
      */
     public function getDialogInfo(string $dialog_id): array {
 
-        return $this->getMadeline()->getInfo($dialog_id);
+        return $this->connection->getMadeline()->getInfo($dialog_id);
     }
 
 
@@ -75,11 +87,10 @@ class Dialogs extends Common {
      * @param string $dialog_id
      * @param bool   $fullfetch
      * @return array
-     * @throws Exception
      */
     public function getDialogPwr(string $dialog_id, bool $fullfetch = true): array {
 
-        return $this->getMadeline()->getPwrChat($dialog_id, $fullfetch);
+        return $this->connection->getMadeline()->getPwrChat($dialog_id, $fullfetch);
     }
 
 
@@ -92,7 +103,7 @@ class Dialogs extends Common {
      */
     public function createGroup(string $title, string $description = ''):? string {
 
-        $updates = $this->getMadeline()->channels->createChannel(...[
+        $updates = $this->connection->getMadeline()->channels->createChannel(...[
             'broadcast'  => false,
             'megagroup'  => true,
             'for_import' => false,
@@ -121,7 +132,7 @@ class Dialogs extends Common {
      */
     public function removeGroup(string $group_id): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $updates = $madeline->channels->deleteChannel(...[
             'channel' => $group_id,
@@ -140,7 +151,7 @@ class Dialogs extends Common {
      */
     public function inviteGroup(string $group_id, array $users_id): array {
 
-        $update = $this->getMadeline()->channels->inviteToChannel(...[
+        $update = $this->connection->getMadeline()->channels->inviteToChannel(...[
             'channel' => $group_id,
             'users'   => $users_id
         ]);
@@ -177,7 +188,7 @@ class Dialogs extends Common {
 
         $admin_rights['_'] = 'chatAdminRights';
 
-        $update = $this->getMadeline()->channels->editAdmin(...[
+        $update = $this->connection->getMadeline()->channels->editAdmin(...[
             'channel'      => $group_id,
             'user_id'      => $user_id,
             'admin_rights' => $admin_rights,
@@ -193,11 +204,10 @@ class Dialogs extends Common {
      * @param string     $channel_name
      * @param array|null $options
      * @return array
-     * @throws Exception
      */
     public function getParticipants(string $channel_name, array $options = null): array {
 
-        $madeline_participants = $this->getMadeline()->channels->getParticipants([
+        $madeline_participants = $this->connection->getMadeline()->channels->getParticipants([
             'channel' => $channel_name,
             'filter'  => ['_' => 'channelParticipantsRecent'],
             'offset'  => 0,

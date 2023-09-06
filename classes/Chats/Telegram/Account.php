@@ -1,122 +1,62 @@
 <?php
 namespace Core2\Mod\Sources\Chats\Telegram;
 
-use danog\MadelineProto\Exception;
 
 /**
- *
+ * @property Api\Account  $account
+ * @property Api\Contacts $contacts
+ * @property Api\Dialogs  $dialogs
+ * @property Api\Messages $messages
+ * @property Api\Updates  $updates
+ * @property Api\Service  $service
  */
-class Account extends Common {
+class Account {
+
+    private Connection $connection;
+    private array      $cache;
 
 
     /**
-     * Авторизация в TG по телефону
-     * @return bool
-     * @throws \Zend_Config_Exception
-     * @throws \Exception
+     * @param Connection $connection
      */
-    public function loginPhone(): bool {
+    public function __construct(Connection $connection) {
 
-        $config = $this->getModuleConfig('sources');
+        $this->connection = $connection;
+    }
 
-        if (empty($config?->tg?->phone)) {
-            throw new \Exception('В конфигурации не задан параметр tg.phone');
+
+    /**
+     * @param string $name
+     * @return null|API\Account|API\Contacts|API\Dialogs|API\Messages|API\Service|API\Updates
+     */
+    public function __get(string $name) {
+
+        if ( ! empty($this->cache[$name])) {
+            $result = $this->cache[$name];
+
+        } else {
+            $result = match ($name) {
+                'account'  => new Api\Account($this->connection),
+                'contacts' => new Api\Contacts($this->connection),
+                'dialogs'  => new Api\Dialogs($this->connection),
+                'messages' => new Api\Messages($this->connection),
+                'updates'  => new Api\Updates($this->connection),
+                'service'  => new Api\Service($this->connection),
+                default    => null,
+            };
+
+            $this->cache[$name] = $result;
         }
 
-        $madeline      = $this->getMadeline();
-        $authorization = $madeline->phoneLogin($config->tg->phone, 0);
-
-        return $authorization['_'] == 'auth.sentCode';
+        return $result;
     }
 
 
     /**
-     * Подтверждение входа по коду (способ 1)
-     * @param string $code
-     * @return array
-     * @throws \Exception
+     * @return int
      */
-    public function completePhone(string $code): array {
+    public function getApiId(): int {
 
-        $madeline = $this->getMadeline();
-        $auth     = $madeline->completePhoneLogin($code);
-
-        if ($auth['_'] === 'account.noPassword') {
-            throw new \Exception('2FA is enabled but no password is set!');
-        }
-
-        return (array)$auth;
-    }
-
-
-    /**
-     * Подтверждение входа по коду и паролю (способ 2)
-     * @param string $code
-     * @param string $password
-     * @return array
-     * @throws Exception
-     */
-    public function complete2faLogin(string $code, string $password): array {
-
-        $madeline = $this->getMadeline();
-        $madeline->completePhoneLogin($code);
-        $auth = $madeline->complete2faLogin($password);
-
-        return (array)$auth;
-    }
-
-
-    /**
-     * Начало работы с
-     * @param string $bot_id
-     * @param string $bot_username
-     * @return array
-     * @throws Exception
-     */
-    public function startBot(string $bot_id, string $bot_username): array {
-
-        $madeline = $this->getMadeline();
-
-        $result = $madeline->contacts->resolveUsername(...[
-            'username' => $bot_username
-        ]);
-
-        $access_hash = '';
-
-        if ( ! empty($result['users']) &&
-            ! empty($result['users']['0']) &&
-            ! empty($result['users']['0']['access_hash'])
-        ) {
-            $access_hash = $result['users']['0']['access_hash'];
-        }
-
-
-        $update = $madeline->messages->startBot(...[
-            'bot' => [
-                '_'           => 'inputUser',
-                'user_id'     => $bot_id,
-                'access_hash' => $access_hash,
-            ],
-            'peer'        => [
-                '_' => 'inputPeerSelf',
-            ],
-            'random_id'   => abs(crc32(time())),
-            'start_param' => md5(time()),
-        ]);
-
-        return (array)$update;
-    }
-
-
-    /**
-     * Получение данных о текущем пользователе
-     * @return array
-     * @throws Exception
-     */
-    public function getSelf(): array {
-
-        $user_self = $this->getMadeline()->getSelf();
-
-        return (array)$user_self;
+        return $this->connection->getApiId();
     }
 }

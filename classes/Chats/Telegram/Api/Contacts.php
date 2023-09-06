@@ -1,12 +1,24 @@
 <?php
-namespace Core2\Mod\Sources\Chats\Telegram;
-
+namespace Core2\Mod\Sources\Chats\Telegram\Api;
+use Core2\Mod\Sources\Chats\Telegram\Connection;
 use danog\MadelineProto\Exception;
 
 /**
  *
  */
-class Contacts extends Common {
+class Contacts {
+
+
+    private Connection $connection;
+
+
+    /**
+     * @param Connection $connection
+     */
+    public function __construct(Connection $connection) {
+
+        $this->connection = $connection;
+    }
 
 
     /**
@@ -16,7 +28,7 @@ class Contacts extends Common {
      */
     public function getContacts(): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $contacts = $madeline->contacts->getContacts();
 
@@ -31,7 +43,7 @@ class Contacts extends Common {
      */
     public function getContactsId(): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $contacts = $madeline->contacts->getContactIDs();
 
@@ -49,7 +61,7 @@ class Contacts extends Common {
      */
     public function addContactById(string $user_id, string $first_name, string $last_name): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $update = $madeline->contacts->addContact(...[
             'id'         => $user_id,
@@ -71,7 +83,7 @@ class Contacts extends Common {
      */
     public function addContactByIdAccess(string $user_id, string $access_hash, string $first_name, string $last_name): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $update = $madeline->contacts->addContact(...[
             'id'         => [
@@ -95,7 +107,7 @@ class Contacts extends Common {
      */
     public function addContactByPhone(string $phone, string $first_name, string $last_name): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $update = $madeline->contacts->importContacts(...[
             'contacts' => [
@@ -115,12 +127,11 @@ class Contacts extends Common {
 
     /**
      * Добавление контакта по номеру телефона
-     * @param string $user_id
      * @return array
      */
     public function getSaved(): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $update = $madeline->contacts->getSaved();
 
@@ -134,7 +145,7 @@ class Contacts extends Common {
      */
     public function getContactsStatuses(): array {
 
-        $madeline = $this->getMadeline();
+        $madeline = $this->connection->getMadeline();
 
         $update = $madeline->contacts->getStatuses();
 

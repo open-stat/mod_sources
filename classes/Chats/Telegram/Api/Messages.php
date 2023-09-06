@@ -1,12 +1,24 @@
 <?php
-namespace Core2\Mod\Sources\Chats\Telegram;
+namespace Core2\Mod\Sources\Chats\Telegram\Api;
+use Core2\Mod\Sources\Chats\Telegram\Connection;
 use danog\MadelineProto\Exception;
 
 
 /**
  *
  */
-class Messages extends Common {
+class Messages {
+
+    private Connection $connection;
+
+
+    /**
+     * @param Connection $connection
+     */
+    public function __construct(Connection $connection) {
+
+        $this->connection = $connection;
+    }
 
 
     /**
@@ -27,7 +39,7 @@ class Messages extends Common {
         $min_id = $options['min_id'] ?? 0;
         $min_id = $min_id < 0 ? 0 : $min_id;
 
-        return $this->getMadeline()->messages->getHistory(
+        return $this->connection->getMadeline()->messages->getHistory(
             peer: "@{$peer_name}",
             offset_id: $offset_id,
             offset_date: 0,

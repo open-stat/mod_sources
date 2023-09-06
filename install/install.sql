@@ -211,13 +211,12 @@ CREATE TABLE `mod_sources_chats_links` (
     `url` varchar(10000) NOT NULL,
     `type` enum('document','audio','photo','video','tg_channel','tg_message') DEFAULT NULL,
     `hash` varchar(100) DEFAULT NULL,
-    `title` varchar(750) DEFAULT NULL,
+    `title` varchar(1500) DEFAULT NULL,
     `description` text,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `host` (`host`),
-    KEY `title` (`title`),
     KEY `hash` (`hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
