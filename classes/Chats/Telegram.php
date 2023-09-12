@@ -88,9 +88,9 @@ class Telegram extends Connections {
      */
     public function start(): void {
 
-        $account = current($this->getAccounts());
+        $accounts = $this->getAccounts();
 
-        if ($account) {
+        foreach ($accounts as $account) {
             $account->service->start();
         }
     }
@@ -102,9 +102,9 @@ class Telegram extends Connections {
      */
     public function stop(): void {
 
-        $account = current($this->getAccounts());
+        $accounts = $this->getAccounts();
 
-        if ($account) {
+        foreach ($accounts as $account) {
             $account->service->stop();
         }
     }
@@ -117,9 +117,9 @@ class Telegram extends Connections {
      */
     public function restart(): void {
 
-        $account = current($this->getAccounts());
+        $accounts = $this->getAccounts();
 
-        if ($account) {
+        foreach ($accounts as $account) {
             $account->service->restart();
         }
     }

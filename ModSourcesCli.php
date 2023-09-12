@@ -248,6 +248,10 @@ class ModSourcesCli extends Common {
         $tg_accounts = $tg->getAccounts( ['history'] );
 
         foreach ($tg_accounts as $tg_account) {
+            if ( ! $tg_account->isActiveMethod('getHistory')) {
+                echo "Метод неактивен у аккаунта {$tg_account->getApiId()}" .PHP_EOL;
+                continue;
+            }
 
             $chat = $this->modSources->dataSourcesChats->fetchRow(
                 $this->modSources->dataSourcesChats->select()
@@ -264,88 +268,114 @@ class ModSourcesCli extends Common {
                 return;
             }
 
-            $date_history        = '2020-01-01';
-            $chat_message_old_id = $chat->old_message_id ?: null;
-            $chat_message_new_id = $chat->new_message_id ?: null;
-            $chat_date_old       = $chat->date_old_message ? new \DateTime($chat->date_old_message) : null;
-            $chat_date_new       = $chat->date_new_message ? new \DateTime($chat->date_new_message) : null;
+            try {
+                $date_history        = '2020-01-01';
+                $chat_message_old_id = $chat->old_message_id ?: null;
+                $chat_message_new_id = $chat->new_message_id ?: null;
+                $chat_date_old       = $chat->date_old_message ? new \DateTime($chat->date_old_message) : null;
+                $chat_date_new       = $chat->date_new_message ? new \DateTime($chat->date_new_message) : null;
 
-            $result = $tg_account->messages->getHistory($chat->peer_name, [
-                'offset_id' => (int)$chat_message_old_id,
-            ]);
+                $peer = $chat->peer_name ? "@{$chat->peer_name}" : $chat->peer_id;
 
-            if ( ! empty($result) && ! empty($result['messages'])) {
-                $content      = json_encode($result, JSON_UNESCAPED_UNICODE);
-                $content_hash = md5($content);
-                $chat_content = $this->modSources->dataSourcesChatsContent->getRowByTypeHash('tg_history_channel', $content_hash);
+                $result = $tg_account->messages->getHistory($peer, [
+                    'offset_id' => (int)$chat_message_old_id,
+                ]);
 
-                if (empty($chat_content)) {
-                    $request_old_date = null;
-                    $request_new_date = null;
-                    $request_old_id   = null;
-                    $request_new_id   = null;
-                    $count_messages   = count($result['messages']);
+                if ( ! empty($result) && ! empty($result['messages'])) {
+                    $content      = json_encode($result, JSON_UNESCAPED_UNICODE);
+                    $content_hash = md5($content);
+                    $chat_content = $this->modSources->dataSourcesChatsContent->getRowByTypeHash('tg_history_channel', $content_hash);
 
-                    foreach($result['messages'] as $message) {
-                        if (empty($message['date']) || empty($message['id'])) {
-                            continue;
+                    if (empty($chat_content)) {
+                        $request_old_date = null;
+                        $request_new_date = null;
+                        $request_old_id   = null;
+                        $request_new_id   = null;
+                        $count_messages   = count($result['messages']);
+
+                        foreach($result['messages'] as $message) {
+                            if (empty($message['date']) || empty($message['id'])) {
+                                continue;
+                            }
+
+                            $message_date = (new \DateTime())->setTimestamp($message['date']);
+
+                            if (is_null($request_old_date) || $request_old_date > $message_date) {
+                                $request_old_date = $message_date;
+                            }
+
+                            if (is_null($request_new_date) || $request_new_date < $message_date) {
+                                $request_new_date = $message_date;
+                            }
+
+                            if (is_null($request_old_id) || $request_old_id > $message['id']) {
+                                $request_old_id = $message['id'];
+                            }
+
+                            if (is_null($request_new_id) || $request_new_id < $message['id']) {
+                                $request_new_id = $message['id'];
+                            }
                         }
 
-                        $message_date = (new \DateTime())->setTimestamp($message['date']);
 
-                        if (is_null($request_old_date) || $request_old_date > $message_date) {
-                            $request_old_date = $message_date;
-                        }
+                        if ($request_new_id) {
+                            $chat_date_old = min($chat_date_old, $request_old_date);
+                            $chat_date_new = max($chat_date_new, $request_new_date);
 
-                        if (is_null($request_new_date) || $request_new_date < $message_date) {
-                            $request_new_date = $message_date;
-                        }
+                            $chat_message_old_id = ! is_null($chat_message_old_id) ? min($chat_message_old_id, $request_old_id) : $request_old_id;
+                            $chat_message_new_id = ! is_null($chat_message_new_id) ? max($chat_message_new_id, $request_new_id) : $request_new_id;
 
-                        if (is_null($request_old_id) || $request_old_id > $message['id']) {
-                            $request_old_id = $message['id'];
-                        }
 
-                        if (is_null($request_new_id) || $request_new_id < $message['id']) {
-                            $request_new_id = $message['id'];
+                            if (empty($chat_date_old) || $chat_date_old > $message_date) {
+                                $chat_date_old = $message_date;
+                            }
+
+                            if (empty($chat_date_new) || $chat_date_new < $message_date) {
+                                $chat_date_new = $message_date;
+                            }
+
+                            $this->modSources->dataSourcesChatsContent->saveContent('tg_history_channel', $result, [
+                                'peer_name'         => $chat->peer_name,
+                                'count_messages'    => $count_messages,
+                                'date_old_messages' => $request_old_date->format('Y-m-d H:i:s'),
+                                'date_new_messages' => $request_new_date->format('Y-m-d H:i:s'),
+                                'old_messages_id'   => $request_old_id,
+                                'new_messages_id'   => $request_new_id,
+                            ]);
+
+                            if ( ! $chat->date_history_load) {
+                                $chat->date_history_load = $date_history;
+                            }
+
+                            $chat->old_message_id   = $chat_message_old_id;
+                            $chat->new_message_id   = $chat_message_new_id;
+                            $chat->date_old_message = $chat_date_old->format('Y-m-d H:i:s');
+                            $chat->date_new_message = $chat_date_new->format('Y-m-d H:i:s');
+                            $chat->save();
                         }
                     }
+                }
 
+            } catch (\Exception $e) {
+                echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
+                echo "Chat: {$peer}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                    if ($request_new_id) {
-                        $chat_date_old = min($chat_date_old, $request_old_date);
-                        $chat_date_new = max($chat_date_new, $request_new_date);
+                if ($e->getMessage() == 'The channel was already closed!') {
+                    $tg_account->service->restart();
 
-                        $chat_message_old_id = ! is_null($chat_message_old_id) ? min($chat_message_old_id, $request_old_id) : $request_old_id;
-                        $chat_message_new_id = ! is_null($chat_message_new_id) ? max($chat_message_new_id, $request_new_id) : $request_new_id;
+                } elseif ($e->getMessage() == 'This peer is not present in the internal peer database' && $chat->peer_name) {
+                    $tg_account->dialogs->getDialogInfo($chat->peer_name);
 
+                } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
+                    $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
 
-                        if (empty($chat_date_old) || $chat_date_old > $message_date) {
-                            $chat_date_old = $message_date;
-                        }
-
-                        if (empty($chat_date_new) || $chat_date_new < $message_date) {
-                            $chat_date_new = $message_date;
-                        }
-
-                        $this->modSources->dataSourcesChatsContent->saveContent('tg_history_channel', $result, [
-                            'peer_name'         => $chat->peer_name,
-                            'count_messages'    => $count_messages,
-                            'date_old_messages' => $request_old_date->format('Y-m-d H:i:s'),
-                            'date_new_messages' => $request_new_date->format('Y-m-d H:i:s'),
-                            'old_messages_id'   => $request_old_id,
-                            'new_messages_id'   => $request_new_id,
-                        ]);
-
-                        if ( ! $chat->date_history_load) {
-                            $chat->date_history_load = $date_history;
-                        }
-
-                        $chat->old_message_id   = $chat_message_old_id;
-                        $chat->new_message_id   = $chat_message_new_id;
-                        $chat->date_old_message = $chat_date_old->format('Y-m-d H:i:s');
-                        $chat->date_new_message = $chat_date_new->format('Y-m-d H:i:s');
-                        $chat->save();
+                    if (is_numeric($ban_seconds)) {
+                        $tg_account->inactiveMethod('getHistory', $ban_seconds);
                     }
+
+                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
                 }
             }
         }
@@ -355,6 +385,8 @@ class ModSourcesCli extends Common {
     /**
      * Телеграм: Получение новых обновлений
      * @return void
+     * @throws \danog\MadelineProto\Exception
+     * @throws Exception
      */
     public function loadTgUpdates(): void {
 
@@ -395,31 +427,56 @@ class ModSourcesCli extends Common {
         $tg_accounts = $tg->getAccounts( ['updates'] );
 
         foreach ($tg_accounts as $tg_account) {
-            $api_id    = $tg_account->getApiId();
-            $update_id = (int)($updates_id[$api_id] ?? 0);
+            if ( ! $tg_account->isActiveMethod('getUpdate')) {
+                echo "Метод неактивен у аккаунта {$tg_account->getApiId()}" .PHP_EOL;
+                continue;
+            }
 
-            $updates = $tg_account->updates->get($update_id + 1);
+            try {
+                $api_id    = $tg_account->getApiId();
+                $update_id = (int)($updates_id[$api_id] ?? 0);
 
-            if ( ! empty($updates)) {
-                foreach ($updates as $key => $update) {
-                    if ( ! empty($update['update_id']) && $update['update_id'] > $update_id) {
-                        $update_id           = (int)$update['update_id'];
-                        $updates_id[$api_id] = $update_id;
+                $updates = $tg_account->updates->get($update_id + 1);
+
+                if ( ! empty($updates)) {
+                    foreach ($updates as $key => $update) {
+                        if ( ! empty($update['update_id']) && $update['update_id'] > $update_id) {
+                            $update_id           = (int)$update['update_id'];
+                            $updates_id[$api_id] = $update_id;
+                        }
+
+                        if ( ! empty($update['update']) &&
+                             ! empty($update['update']['_']) &&
+                            in_array($update['update']['_'], [ 'updateChannelUserTyping', 'updateUserStatus' ])
+                        ) {
+                            unset($updates[$key]);
+                        }
                     }
 
-                    if ( ! empty($update['update']) &&
-                        ! empty($update['update']['_']) &&
-                        in_array($update['update']['_'], [ 'updateChannelUserTyping', 'updateUserStatus' ])
-                    ) {
-                        unset($updates[$key]);
+                    if ( ! empty($updates)) {
+                        $this->modSources->dataSourcesChatsContent->saveContent('tg_updates', $updates, [
+                            'date'          => date('Y-m-d H:i:s'),
+                            'count_updates' => count($updates),
+                        ]);
                     }
                 }
 
-                if ( ! empty($updates)) {
-                    $this->modSources->dataSourcesChatsContent->saveContent('tg_updates', $updates, [
-                        'date'          => date('Y-m-d H:i:s'),
-                        'count_updates' => count($updates),
-                    ]);
+            } catch (\Exception $e) {
+                echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if ($e->getMessage() == 'The channel was already closed!') {
+                    $tg_account->service->restart();
+
+                } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
+                    $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
+
+                    if (is_numeric($ban_seconds)) {
+                        $tg_account->inactiveMethod('getUpdate', $ban_seconds);
+                    }
+
+                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
                 }
             }
         }
@@ -432,6 +489,8 @@ class ModSourcesCli extends Common {
     /**
      * Телеграм: Получение информации о каналах и группах
      * @return void
+     * @throws \danog\MadelineProto\Exception
+     * @throws Exception
      */
     public function loadTgPeersInfo(): void {
 
@@ -439,6 +498,10 @@ class ModSourcesCli extends Common {
         $tg_accounts = $tg->getAccounts( ['chat_info'] );
 
         foreach ($tg_accounts as $tg_account) {
+            if ( ! $tg_account->isActiveMethod('getDialog')) {
+                echo "Метод неактивен у аккаунта {$tg_account->getApiId()}" .PHP_EOL;
+                continue;
+            }
 
             $chat = $this->modSources->dataSourcesChats->fetchRow(
                 $this->modSources->dataSourcesChats->select()
@@ -455,13 +518,13 @@ class ModSourcesCli extends Common {
             }
 
             try {
-                $dialog_id = $chat->peer_id ?: $chat->peer_name;
+                $peer = $chat->peer_name ? "@{$chat->peer_name}" : $chat->peer_id;
 
                 try {
-                    $dialog = $tg_account->dialogs->getDialogPwr($dialog_id);
+                    $dialog = $tg_account->dialogs->getDialogPwr($peer);
                 } catch (\Exception $e) {
                     if ($e->getMessage() == 'CHANNEL_PRIVATE') {
-                        $dialog = $tg_account->dialogs->getDialogPwr($dialog_id, false);
+                        $dialog = $tg_account->dialogs->getDialogPwr($peer, false);
                     } else {
                         throw $e;
                     }
@@ -492,32 +555,24 @@ class ModSourcesCli extends Common {
                 }
 
             } catch (\Exception $e) {
-                echo "Chat: {$dialog_id}" .PHP_EOL;
+                echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
+                echo "Chat: {$peer}" .PHP_EOL;
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                //  if (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
-                //      $ban_seconds = substr($e->getMessage(), strpos($e->getMessage(), 'FLOOD_WAIT_'));
-                //
-                //      if (is_numeric($ban_seconds)) {
-                //          $cron_job = $this->modCron->dataCronJobs->fetchRow(
-                //              $this->modCron->dataCronJobs->select()
-                //                  ->where("module_id = 'source'")
-                //                  ->where("module_method = ?", __FUNCTION__)
-                //          );
-                //
-                //          if ( ! empty($cron_job)) {
-                //              $ban_seconds += 100;
-                //
-                //              $cron_job->execute_type = 'limited';
-                //              $cron_job->execute_from = date('Y-m-d H:i:s', strtotime("+ {$ban_seconds} seconds"));
-                //              $cron_job->execute_to   = null;
-                //              $cron_job->save();
-                //          }
-                //      }
-                //  }
-            }
+                if ($e->getMessage() == 'The channel was already closed!') {
+                    $tg_account->service->restart();
 
+                } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
+                    $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
+
+                    if (is_numeric($ban_seconds)) {
+                        $tg_account->inactiveMethod('getDialog', $ban_seconds);
+                    }
+
+                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
+                }
+            }
 
             $chat->date_state_info = new \Zend_Db_Expr('NOW()');
             $chat->save();
@@ -708,6 +763,77 @@ class ModSourcesCli extends Common {
                             $link_category->save();
                         }
                     }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Телеграм: Управление подписками на каналы
+     * @return void
+     * @throws Exception
+     */
+    public function subscribeTgChannels(): void {
+
+        $tg          = new Sources\Chats\Telegram();
+        $tg_accounts = $tg->getAccounts( ['updates'] );
+
+        foreach ($tg_accounts as $tg_account) {
+            if ( ! $tg_account->isActiveMethod('subscribe')) {
+                echo "Метод неактивен у аккаунта {$tg_account->getApiId()}" .PHP_EOL;
+                continue;
+            }
+
+            try {
+                $api_id          = $tg_account->getApiId();
+                $subscribe_chats = $this->db->fetchAll("
+                    SELECT scas.id,
+                           sc.peer_id,
+                           sc.peer_name,
+                           scas.chat_id,
+                           scas.is_subscribe_need_sw
+                    FROM mod_sources_chats_accounts AS sca
+                        JOIN mod_sources_chats_accounts_subscribes AS scas ON sca.id = scas.account_id
+                        JOIN mod_sources_chats AS sc ON scas.chat_id = sc.id
+                    WHERE sca.account_key = ?
+                      AND scas.is_subscribe_need_sw IS NOT NULL
+                    LIMIT 3
+                ", $api_id);
+
+
+                foreach ($subscribe_chats as $subscribe_chat) {
+                    $peer = $subscribe_chat['peer_name'] ?: $subscribe_chat['peer_id'];
+
+                    if ($subscribe_chat['is_subscribe_need_sw'] == 'Y') {
+                        $tg_account->dialogs->joinChannel($peer);
+                    } else {
+                        $tg_account->dialogs->leaveChannel($peer);
+                    }
+
+
+                    $subscribe = $this->modSources->dataSourcesChatsAccountsSubscribes->find($subscribe_chat['id'])->current();
+                    $subscribe->is_subscribe_sw      = $subscribe_chat['is_subscribe_need_sw'];
+                    $subscribe->is_subscribe_need_sw = null;
+                    $subscribe->save();
+                }
+
+            } catch (\Exception $e) {
+                echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if ($e->getMessage() == 'The channel was already closed!') {
+                    $tg_account->service->restart();
+
+                } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
+                    $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
+
+                    if (is_numeric($ban_seconds)) {
+                        $tg_account->inactiveMethod('subscribe', $ban_seconds);
+                    }
+
+                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
                 }
             }
         }

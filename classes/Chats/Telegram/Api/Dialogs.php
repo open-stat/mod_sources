@@ -27,6 +27,18 @@ class Dialogs {
      * @return array
      * @throws Exception
      */
+    public function getDialogs(): array {
+
+        $result = $this->connection->getMadeline()->getDialogs();
+
+        return $result;
+    }
+
+
+    /**
+     * Получение списка id диалогов
+     * @return array
+     */
     public function getDialogsId(): array {
 
         $result = $this->connection->getMadeline()->getFullDialogs();
@@ -74,7 +86,6 @@ class Dialogs {
      * Получение информации о группе
      * @param string $dialog_id
      * @return array
-     * @throws Exception
      */
     public function getDialogInfo(string $dialog_id): array {
 
@@ -143,11 +154,41 @@ class Dialogs {
 
 
     /**
+     * Присоединяйтесь к каналу/супергруппе
+     * @param string $group_id
+     * @return array
+     */
+    public function joinChannel(string $group_id): array {
+
+        $update = $this->connection->getMadeline()->channels->joinChannel(...[
+            'channel' => $group_id
+        ]);
+
+        return (array)$update;
+    }
+
+
+
+    /**
+     * Покинуть канал/супергруппу
+     * @param string $group_id
+     * @return array
+     */
+    public function leaveChannel(string $group_id): array {
+
+        $update = $this->connection->getMadeline()->channels->leaveChannel(...[
+            'channel' => $group_id
+        ]);
+
+        return (array)$update;
+    }
+
+
+    /**
      * Приглашение в группу пользователей или ботов
      * @param string $group_id
      * @param array  $users_id
      * @return array
-     * @throws Exception
      */
     public function inviteGroup(string $group_id, array $users_id): array {
 

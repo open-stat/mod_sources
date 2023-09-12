@@ -137,6 +137,32 @@ CREATE TABLE `mod_sources_chats` (
   KEY `peer_id` (`peer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `mod_sources_chats_accounts` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `account_key` varchar(255) NOT NULL,
+    `inactive_methods` json NULL DEFAULT NULL,
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `account_key` (`account_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_chats_accounts_subscribes` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `account_id` int unsigned NOT NULL,
+    `chat_id` int unsigned NOT NULL,
+    `is_subscribe_sw` enum('Y','N') NOT NULL DEFAULT 'N',
+    `is_subscribe_need_sw` enum('Y','N') DEFAULT 'N',
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `account_id_chat_id` (`account_id`,`chat_id`),
+    KEY `account_id` (`account_id`),
+    KEY `chat_id` (`chat_id`),
+    CONSTRAINT `fk1_mod_sources_chats_accounts_subscribes` FOREIGN KEY (`account_id`) REFERENCES `mod_sources_chats_accounts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk2_mod_sources_chats_accounts_subscribes` FOREIGN KEY (`chat_id`) REFERENCES `mod_sources_chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `mod_sources_chats_files` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `content` longblob,

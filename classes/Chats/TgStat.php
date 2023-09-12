@@ -11,7 +11,7 @@ class TgStat extends \Common {
     private array $options = [
         'debug_requests'      => false,
         'cache_dir'           => '',
-        'cache_days'          => 30,
+        'cache_days'          => 60,
         'limit_empty_results' => 3,
     ];
 

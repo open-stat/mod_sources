@@ -183,6 +183,10 @@ class Connections extends \Common {
             (new MadelineProto\Settings\Serialization())
                 ->setInterval(300)
         );
+        $settings->setPeer(
+            (new MadelineProto\Settings\Peer())
+                ->setCacheAllPeersOnStartup(true)
+        );
 
         if ($config?->tg?->db?->uri &&
             $config?->tg?->db?->database &&
