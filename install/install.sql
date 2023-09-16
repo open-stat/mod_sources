@@ -374,3 +374,215 @@ CREATE TABLE `mod_sources_chats_content` (
     KEY `is_parsed_sw` (`is_parsed_sw`),
     KEY `hash` (`hash`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+###
+### Video
+###
+
+CREATE TABLE `mod_sources_videos` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `type` enum('yt','rt') NOT NULL,
+    `channel_id` varchar(255) DEFAULT NULL,
+    `title` varchar(255) DEFAULT NULL,
+    `name` varchar(255) DEFAULT NULL,
+    `description` text,
+    `subscribers_count` int unsigned DEFAULT NULL,
+    `geolocation` varchar(100) DEFAULT NULL,
+    `default_lang` varchar(10) DEFAULT NULL,
+    `meta_data` json DEFAULT NULL,
+    `date_state_info` date DEFAULT NULL,
+    `date_platform_created` date DEFAULT NULL,
+    `is_connect_sw` enum('Y','N') NOT NULL DEFAULT 'N',
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `type` (`type`),
+    KEY `channel_id` (`channel_id`),
+    KEY `title` (`title`),
+    KEY `is_connect_sw` (`is_connect_sw`),
+    KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_accounts` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `account_key` varchar(255) NOT NULL,
+    `inactive_methods` json DEFAULT NULL,
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `account_key` (`account_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_subscribers` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `channel_id` int unsigned NOT NULL,
+    `date_day` date NOT NULL,
+    `quantity` int unsigned NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `channel_id` (`channel_id`),
+    KEY `date_day` (`date_day`),
+    CONSTRAINT `fk1_mod_sources_videos_subscribers` FOREIGN KEY (`channel_id`) REFERENCES `mod_sources_videos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_links` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `host` varchar(100) NOT NULL,
+   `url` varchar(10000) NOT NULL,
+   `hash` varchar(100) DEFAULT NULL,
+   `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+   `date_last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`),
+   KEY `host` (`host`),
+   KEY `hash` (`hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_users` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NULL,
+    `profile_url` varchar(500) NULL,
+    `platform_channel_id` varchar(255) NULL,
+    `platform_channel_url` varchar(500) NULL,
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_tags` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `tag` varchar(255),
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `tag` (`tag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_hashtags` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `hashtag` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `host` (`hashtag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `channel_id` int unsigned NOT NULL,
+    `platform_id` varchar(255) NOT NULL,
+    `url` varchar(255) NULL,
+    `title` varchar(255) NULL,
+    `description` text NULL,
+    `duration_ms` int unsigned NULL,
+
+    `viewed_count` int unsigned DEFAULT NULL,
+    `comments_count` int unsigned DEFAULT NULL,
+    `likes_count` int unsigned DEFAULT NULL,
+    `dislike_count` int unsigned DEFAULT NULL,
+    `default_lang` varchar(10) DEFAULT NULL,
+
+    `date_platform_created` timestamp NULL DEFAULT NULL,
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `channel_id` (`channel_id`),
+    KEY `platform_id` (`platform_id`),
+    KEY `title` (`title`),
+    KEY `url` (`url`),
+    CONSTRAINT `fk1_mod_sources_videos_clips` FOREIGN KEY (`channel_id`) REFERENCES `mod_sources_videos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips_files` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `content` longblob,
+   `refid` int unsigned NOT NULL,
+   `filename` varchar(255) NOT NULL,
+   `filesize` int NOT NULL,
+   `hash` varchar(128) NOT NULL,
+   `type` varchar(20) DEFAULT NULL,
+   `fieldid` varchar(255) DEFAULT NULL,
+   `meta_data` json DEFAULT NULL,
+   `thumb` longblob,
+   PRIMARY KEY (`id`),
+   KEY `refid` (`refid`),
+   CONSTRAINT `fk1_mod_sources_videos_clips_files` FOREIGN KEY (`refid`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips_comments` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `clip_id` int unsigned NOT NULL,
+   `user_id` int unsigned NULL,
+   `platform_id` varchar(255) NOT NULL,
+   `reply_to_id` int unsigned DEFAULT NULL,
+   `likes_count` int unsigned DEFAULT NULL,
+   `dislike_count` int unsigned DEFAULT NULL,
+   `content` text,
+   `date_platform_created` timestamp NULL DEFAULT NULL,
+   `date_platform_modify` timestamp NULL DEFAULT NULL,
+   `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+   `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`),
+   KEY `clip_id` (`clip_id`),
+   KEY `platform_id` (`platform_id`),
+   KEY `user_id` (`user_id`),
+   CONSTRAINT `fk1_mod_sources_videos_clips_comments` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+   CONSTRAINT `fk2_mod_sources_videos_clips_comments` FOREIGN KEY (`user_id`) REFERENCES `mod_sources_videos_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips_subtitles` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `clip_id` int unsigned NOT NULL,
+   `content` text,
+   `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+   `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`),
+   KEY `clip_id` (`clip_id`),
+   CONSTRAINT `fk1_mod_sources_videos_clips_subtitles` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips_tags` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `clip_id` int unsigned NOT NULL,
+   `tag_id` int unsigned NOT NULL,
+   PRIMARY KEY (`id`),
+   KEY `clip_id` (`clip_id`),
+   KEY `tag_id` (`tag_id`),
+   CONSTRAINT `fk1_mod_sources_videos_clips_tags` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+   CONSTRAINT `fk2_mod_sources_videos_clips_tags` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips_hashtags` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `clip_id` int unsigned NOT NULL,
+   `hashtag_id` int unsigned NOT NULL,
+   PRIMARY KEY (`id`),
+   KEY `clip_id` (`clip_id`),
+   KEY `hashtag_id` (`hashtag_id`),
+   CONSTRAINT `fk1_mod_sources_videos_clips_hashtags` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+   CONSTRAINT `fk2_mod_sources_videos_clips_hashtags` FOREIGN KEY (`hashtag_id`) REFERENCES `mod_sources_videos_hashtags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mod_sources_videos_clips_links` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `clip_id` int unsigned NOT NULL,
+   `link_id` int unsigned NOT NULL,
+   PRIMARY KEY (`id`),
+   KEY `clip_id` (`clip_id`),
+   KEY `link_id` (`link_id`),
+   CONSTRAINT `fk1_mod_sources_videos_clips_links` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+   CONSTRAINT `fk2_mod_sources_videos_clips_links` FOREIGN KEY (`link_id`) REFERENCES `mod_sources_videos_links` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE `mod_sources_videos_raw` (
+   `id` int unsigned NOT NULL AUTO_INCREMENT,
+   `type` varchar(100) NOT NULL,
+   `content` longblob NOT NULL,
+   `meta_data` json DEFAULT NULL,
+   `hash` varchar(100) DEFAULT NULL,
+   `is_parsed_sw` enum('Y','N') NOT NULL DEFAULT 'N',
+   `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+   `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`),
+   KEY `type` (`type`),
+   KEY `is_parsed_sw` (`is_parsed_sw`),
+   KEY `hash` (`hash`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;

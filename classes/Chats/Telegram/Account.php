@@ -85,7 +85,7 @@ class Account extends \Common {
 
         if ( ! $account) {
             $account = $this->modSources->dataSourcesChatsAccounts->createRow([
-                'api_id' => $api_id,
+                'account_key' => $api_id,
             ]);
             $account->save();
         }
@@ -109,7 +109,7 @@ class Account extends \Common {
 
         if ( ! $account) {
             $account = $this->modSources->dataSourcesChatsAccounts->createRow([
-                'api_id' => $api_id,
+                'account_key' => $api_id,
             ]);
             $account->save();
         }

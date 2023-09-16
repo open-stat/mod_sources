@@ -1,5 +1,6 @@
 <?php
 use Core2\Mod\Sources;
+use \Alaouy\Youtube\Youtube;
 
 require_once DOC_ROOT . 'core2/inc/classes/Common.php';
 require_once "classes/autoload.php";
@@ -973,28 +974,561 @@ class ModSourcesCli extends Common {
 
 
     /**
-     * Получение необработанных телеграмм данных
-     * Не для планировщика
-     * @param int $row_id
-     * @return string|null
+     * @return void
+     * @throws Exception
+     * @no_cron
      */
-    public function getContentRow(int $row_id):? string {
+    public function tgTest(): void {
 
-        $row = $this->modSources->dataSourcesChatsContent->fetchRow(
-            $this->modSources->dataSourcesChatsContent->select()
-                ->where("id = ?", $row_id)
-        );
-
-        if (empty($row)) {
-            return 'Данные с таким id не найдены';
-        }
-
-        $content_bin = gzuncompress($row->content_bin);
+        $tg = new Core2\Mod\Sources\Chats\Telegram();
+        $account = $tg->getAccountByApiId(0);
 
         echo '<pre>';
-        print_r(json_decode($content_bin, 1));
+        print_r($account->dialogs->getDialogsId());
         echo '</pre>';
+    }
 
-        return null;
+
+    /**
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function ytTest(): void {
+
+        $yt      = new Sources\Video\YouTube();
+        $account = $yt->getAccountByNmbr(1);
+
+        echo '<pre>';
+        echo '</pre>';
+    }
+
+
+    /**
+     * YouTube: Показ содержимого записи из загруженных данных
+     * @param int $content_id
+     * @return void
+     * @throws Exception
+     */
+    public function viewYtContent(int $content_id): void {
+
+        $row = $this->modSources->dataSourcesVideosRaw->find($content_id)->current();
+
+        if (empty($row)) {
+            throw new \Exception('Данные с таким id не найдены');
+        }
+
+        echo '<pre>';
+        print_r(json_decode(gzuncompress($row->content), true));
+        echo '</pre>';
+    }
+
+
+    /**
+     * YouTube: Получение информации о каналах
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtChannelsInfo(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['channel_info'] );
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+            $channel = $this->modSources->dataSourcesVideos->fetchRow(
+                $this->modSources->dataSourcesVideos->select()
+                    ->where("type = 'yt'")
+                    ->where("channel_id IS NOT NULL OR name IS NOT NULL")
+                    ->where("is_load_info_sw = 'N'")
+                    ->order(new Zend_Db_Expr("is_connect_sw = 'Y' DESC"))
+                    ->order(new Zend_Db_Expr("name IS NULL DESC"))
+                    ->order("subscribers_count DESC")
+                    ->limit(1)
+            );
+
+            if (empty($channel)) {
+                continue;
+            }
+
+            try {
+                $channel_info = $channel->channel_id
+                    ? $yt_account->getChannelInfoById($channel->channel_id)
+                    : $yt_account->getChannelInfoByName($channel->name);
+
+                if ( ! empty($channel_info)) {
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_info', $channel_info, [
+                        'date'       => date('Y-m-d H:i:s'),
+                        'channel_id' => $channel->channel_id,
+                    ]);
+                }
+
+                $channel->date_state_info = new \Zend_Db_Expr('NOW()');
+                $channel->is_load_info_sw = 'Y';
+                $channel->save();
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение статистики о каналах
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtChannelsStats(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['channel_stat'] );
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+
+            $channels_id = $this->db->fetchPairs("
+                SELECT sv.id,
+                       sv.channel_id  
+                FROM mod_sources_videos AS sv
+                WHERE sv.type = 'yt'
+                  AND sv.is_connect_sw = 'Y'
+                  AND sv.channel_id IS NOT NULL
+                  AND (sv.date_state_info IS NULL OR sv.date_state_info < NOW())
+                ORDER BY sv.date_state_info ASC
+                LIMIT 50
+            ");
+
+            if (empty($channels_id)) {
+                continue;
+            }
+
+            try {
+                $channels_info = $yt_account->getChannelsInfoById(array_values($channels_id), [ 'id', 'statistics' ]);
+
+                if ( ! empty($channels_info)) {
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_channels_stats', $channels_info, [
+                        'date'  => date('Y-m-d H:i:s'),
+                        'count' => count($channels_info),
+                    ]);
+
+                    foreach ($channels_info as $channel_info) {
+                        if (($channel_id = array_search($channel_info['id'], $channels_id)) !== false) {
+                            $channel = $this->modSources->dataSourcesVideos->find($channel_id)->current();
+                            $channel->date_state_info = new \Zend_Db_Expr('NOW()');
+                            $channel->save();
+                        }
+                    }
+                }
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение истории видео из каналов
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtChannelsVideoHistory(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['channel_videos'] );
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+
+            $channel = $this->modSources->dataSourcesVideos->fetchRow(
+                $this->modSources->dataSourcesVideos->select()
+                    ->where("type = 'yt'")
+                    ->where("is_connect_sw = 'Y'")
+                    ->where("is_load_history_sw = 'N'")
+                    ->where("channel_id IS NOT NULL")
+                    ->order("subscribers_count DESC")
+                    ->limit(1)
+            );
+
+            if (empty($channel)) {
+                continue;
+            }
+
+            try {
+                $date_published_before = $channel->date_load_old_clip
+                    ? new \DateTime(date('Y-m-d H:i:s', strtotime($channel->date_load_old_clip) - 1))
+                    : null;
+
+                $channel_videos = $yt_account->getChannelVideos($channel->channel_id, [ 'published_before' => $date_published_before ]);
+
+
+                if ( ! empty($channel_videos['results'])) {
+                    $date_last_created = $channel->date_load_last_clip;
+                    $date_old_created  = $channel->date_load_old_clip;
+
+                    foreach ($channel_videos['results'] as $video) {
+                        if ( ! empty($video['snippet']) &&
+                             ! empty($video['snippet']['publishTime'])
+                        ) {
+                            $publish_time = date('Y-m-d H:i:s', strtotime($video['snippet']['publishTime']));
+
+                            if (empty($date_last_created) ||
+                                $date_last_created < $publish_time
+                            ) {
+                                $date_last_created = $publish_time;
+                            }
+
+                            if (empty($date_old_created) ||
+                                $date_old_created > $publish_time
+                            ) {
+                                $date_old_created = $publish_time;
+                            }
+                        }
+                    }
+
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_videos', $channel_videos['results'], [
+                        'date'       => date('Y-m-d H:i:s'),
+                        'count'      => count($channel_videos['results']),
+                        'channel_id' => $channel->channel_id,
+                    ]);
+
+                    $channel->date_load_last_clip = $date_last_created;
+                    $channel->date_load_old_clip  = $date_old_created;
+                    $channel->save();
+
+                } else {
+                    $channel->is_load_history_sw = 'Y';
+                    $channel->save();
+                }
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение новых видео из каналов
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtChannelsVideo(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['channel_videos'] );
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+
+            $channel = $this->modSources->dataSourcesVideos->fetchRow(
+                $this->modSources->dataSourcesVideos->select()
+                    ->where("type = 'yt'")
+                    ->where("is_connect_sw = 'Y'")
+                    ->where("channel_id IS NOT NULL")
+                    ->where("date_update_videos_sw IS NULL OR date_update_videos_sw != NOW()")
+                    ->order("date_update_videos_sw ASC")
+                    ->limit(1)
+            );
+
+            if (empty($channel)) {
+                continue;
+            }
+
+            try {
+                $date_published_after = $channel->date_load_last_clip
+                    ? new \DateTime(date('Y-m-d H:i:s', strtotime($channel->date_load_last_clip) + 1))
+                    : null;
+
+                $channel_videos = $yt_account->getChannelVideos($channel->channel_id, [ 'published_after' => $date_published_after ]);
+
+                if ( ! empty($channel_videos['results'])) {
+                    $date_last_created = $channel->date_load_last_clip;
+                    $date_old_created  = $channel->date_load_old_clip;
+
+                    foreach ($channel_videos['results'] as $video) {
+                        if ( ! empty($video['snippet']) && ! empty($video['snippet']['publishTime'])) {
+                            $publish_time = date('Y-m-d H:i:s', strtotime($video['snippet']['publishTime']));
+
+                            if (empty($date_last_created) ||
+                                $date_last_created < $publish_time
+                            ) {
+                                $date_last_created = $publish_time;
+                            }
+
+                            if (empty($date_old_created) ||
+                                $date_old_created > $publish_time
+                            ) {
+                                $date_old_created = $publish_time;
+                            }
+                        }
+                    }
+
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_videos', $channel_videos['results'], [
+                        'date'       => date('Y-m-d H:i:s'),
+                        'count'      => count($channel_videos['results']),
+                        'channel_id' => $channel->channel_id,
+                    ]);
+
+
+                    $channel->date_load_last_clip = $date_last_created;
+                    $channel->date_load_old_clip  = $date_old_created;
+                }
+
+
+                $channel->date_update_videos_sw = new \Zend_Db_Expr('NOW()');
+                $channel->save();
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение информации о видео
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtVideoInfo(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['video_info'] );
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+            $videos_id = $this->db->fetchPairs("
+                SELECT svc.id,
+                       svc.platform_id
+                FROM mod_sources_videos_clips AS svc
+                    JOIN mod_sources_videos AS sv ON sv.id = svc.channel_id
+                WHERE sv.type = 'yt'
+                  AND sv.is_connect_sw = 'Y'
+                  AND svc.is_load_info_sw = 'N'
+                LIMIT 50
+            ");
+
+            if (empty($videos_id)) {
+                continue;
+            }
+
+            try {
+                $videos = $yt_account->getVideosInfo(array_values($videos_id));
+
+                if ( ! empty($videos)) {
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_videos_info', $videos, [
+                        'date'  => date('Y-m-d H:i:s'),
+                        'count' => count($videos),
+                    ]);
+
+                    foreach ($videos as $video) {
+                        if (($video_id = array_search($video['id'], $videos_id)) !== false) {
+                            $video = $this->modSources->dataSourcesVideosClips->find($video_id)->current();
+                            $video->is_load_info_sw = 'Y';
+                            $video->save();
+                        }
+                    }
+                }
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение популярных видео
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtVideosPopular(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['video_popular'] );
+
+        $config  = $this->getModuleConfig('sources');
+        $regions = $config?->yt?->regions ? explode(',', $config->yt->regions) : [];
+        $regions = array_map('trim', $regions);
+
+        // Получить список видео без региона
+        $regions[] = '';
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+            try {
+                foreach ($regions as $region) {
+                    $videos = $yt_account->getVideosPopular($region);
+
+                    if ( ! empty($videos)) {
+                        $this->modSources->dataSourcesVideosRaw->saveContent('yt_videos_popular', $videos, [
+                            'date'   => date('Y-m-d H:i:s'),
+                            'region' => $region,
+                            'count'  => count($videos),
+                        ]);
+                    }
+                }
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение комментариев из видео
+     * @return void
+     * @throws Zend_Config_Exception
+     */
+    public function loadYtVideoComments(): void {
+
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['video_comments'] );
+
+        foreach ($yt_accounts as $yt_account) {
+            if ( ! $yt_account->isActiveMethod('yt_account')) {
+                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                continue;
+            }
+
+
+            $video_id = $this->db->fetchOne("
+                SELECT svc.id
+                FROM mod_sources_videos_clips AS svc
+                    JOIN mod_sources_videos AS sv ON sv.id = svc.channel_id
+                WHERE sv.type = 'yt'
+                  AND sv.is_connect_sw = 'Y'
+                  AND svc.is_load_comments_sw = 'N' 
+                ORDER BY svc.viewed_count DESC
+                LIMIT 1
+            ");
+
+            if (empty($video_id)) {
+                continue;
+            }
+
+            try {
+                $video          = $this->modSources->dataSourcesVideosClips->find($video_id)->current();
+                $video_comments = $yt_account->getVideosComments($video->platform_id, $video->comments_page_token);
+
+                if ( ! empty($channel_videos['results'])) {
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_comments', $channel_videos['results'], [
+                        'date'     => date('Y-m-d H:i:s'),
+                        'count'    => count($channel_videos['results']),
+                        'video_id' => $video->platform_id,
+                    ]);
+                }
+
+                if ( ! empty($video_comments['info'])) {
+                    if ( ! empty($video_comments['info']['nextPageToken'])) {
+                        $video->comments_page_token = $video_comments['info']['nextPageToken'];
+                    } else {
+                        $video->is_load_comments_sw = 'Y';
+                    }
+                }
+
+                $video->save();
+
+            } catch (\Exception $e) {
+                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                    $yt_account->inactiveMethod('yt_account');
+                }
+            }
+        }
+    }
+
+
+    /**
+     * YouTube: Получение субтитров из видео
+     * @return void
+     */
+    public function loadYtVideoSubtitles(): void {
+
+    }
+
+
+    /**
+     * YouTube: Получение картинок из видео
+     * @return void
+     */
+    public function loadYtVideoImages(): void {
+
+    }
+
+
+    /**
+     * YouTube: Обработка загруженных данных
+     * @return void
+     */
+    public function parseYtContent(): void {
+
     }
 }

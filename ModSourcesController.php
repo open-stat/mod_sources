@@ -18,23 +18,41 @@ require_once 'classes/autoload.php';
  * @property \SourcesSitesPagesTags         $dataSourcesSitesPagesTags
  * @property \SourcesSitesTags              $dataSourcesSitesTags
  *                                                               
- * @property \SourcesChats                  $dataSourcesChats
- * @property \SourcesChatsCategories        $dataSourcesChatsCategories
- * @property \SourcesChatsCategoriesLink    $dataSourcesChatsCategoriesLink
- * @property \SourcesChatsContent           $dataSourcesChatsContent
- * @property \SourcesChatsUsers             $dataSourcesChatsUsers
- * @property \SourcesChatsUsersLinks        $dataSourcesChatsUsersLinks
- * @property \SourcesChatsReactions         $dataSourcesChatsReactions
- * @property \SourcesChatsLinks             $dataSourcesChatsLinks
- * @property \SourcesChatsHashtags          $dataSourcesChatsHashtags
- * @property \SourcesChatsFiles             $dataSourcesChatsFiles
- * @property \SourcesChatsSubscribers       $dataSourcesChatsSubscribers
- * @property \SourcesChatsMessages          $dataSourcesChatsMessages
- * @property \SourcesChatsMessagesReactions $dataSourcesChatsMessagesReactions
- * @property \SourcesChatsMessagesFiles     $dataSourcesChatsMessagesFiles
- * @property \SourcesChatsMessagesLinks     $dataSourcesChatsMessagesLinks
- * @property \SourcesChatsMessagesReplies   $dataSourcesChatsMessagesReplies
- * @property \SourcesChatsMessagesHashtag   $dataSourcesChatsMessagesHashtag
+ * @property \SourcesChats                   $dataSourcesChats
+ * @property \SourcesChatsAccounts           $dataSourcesChatsAccounts
+ * @property \SourcesChatsAccountsSubscribes $dataSourcesChatsAccountsSubscribes
+ * @property \SourcesChatsCategories         $dataSourcesChatsCategories
+ * @property \SourcesChatsCategoriesLink     $dataSourcesChatsCategoriesLink
+ * @property \SourcesChatsContent            $dataSourcesChatsContent
+ * @property \SourcesChatsUsers              $dataSourcesChatsUsers
+ * @property \SourcesChatsUsersLinks         $dataSourcesChatsUsersLinks
+ * @property \SourcesChatsReactions          $dataSourcesChatsReactions
+ * @property \SourcesChatsLinks              $dataSourcesChatsLinks
+ * @property \SourcesChatsHashtags           $dataSourcesChatsHashtags
+ * @property \SourcesChatsFiles              $dataSourcesChatsFiles
+ * @property \SourcesChatsSubscribers        $dataSourcesChatsSubscribers
+ * @property \SourcesChatsMessages           $dataSourcesChatsMessages
+ * @property \SourcesChatsMessagesReactions  $dataSourcesChatsMessagesReactions
+ * @property \SourcesChatsMessagesFiles      $dataSourcesChatsMessagesFiles
+ * @property \SourcesChatsMessagesLinks      $dataSourcesChatsMessagesLinks
+ * @property \SourcesChatsMessagesReplies    $dataSourcesChatsMessagesReplies
+ * @property \SourcesChatsMessagesHashtag    $dataSourcesChatsMessagesHashtag
+ *
+ * @property \SourcesVideos                 $dataSourcesVideos
+ * @property \SourcesVideosAccounts         $dataSourcesVideosAccounts
+ * @property \SourcesVideosClips            $dataSourcesVideosClips
+ * @property \SourcesVideosClipsComments    $dataSourcesVideosClipsComments
+ * @property \SourcesVideosClipsFiles       $dataSourcesVideosClipsFiles
+ * @property \SourcesVideosClipsHashtags    $dataSourcesVideosClipsHashtags
+ * @property \SourcesVideosClipsLinks       $dataSourcesVideosClipsLinks
+ * @property \SourcesVideosClipsSubtitles   $dataSourcesVideosClipsSubtitles
+ * @property \SourcesVideosClipsTags        $dataSourcesVideosClipsTags
+ * @property \SourcesVideosHashtags         $dataSourcesVideosHashtags
+ * @property \SourcesVideosLinks            $dataSourcesVideosLinks
+ * @property \SourcesVideosSubscribers      $dataSourcesVideosSubscribers
+ * @property \SourcesVideosRaw              $dataSourcesVideosRaw
+ * @property \SourcesVideosTags             $dataSourcesVideosTags
+ * @property \SourcesVideosUsers            $dataSourcesVideosUsers
  */
 class ModSourcesController extends Common {
 
