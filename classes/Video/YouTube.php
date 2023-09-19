@@ -90,6 +90,7 @@ class YouTube extends \Common {
 
             $account = new Account($yt_connection, [
                 'nmbr'    => $nmbr,
+                'apikey'  => $conf_account?->apikey,
                 'actions' => $conf_account?->actions,
             ]);
 

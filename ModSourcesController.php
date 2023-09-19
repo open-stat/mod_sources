@@ -40,6 +40,8 @@ require_once 'classes/autoload.php';
  *
  * @property \SourcesVideos                 $dataSourcesVideos
  * @property \SourcesVideosAccounts         $dataSourcesVideosAccounts
+ * @property \SourcesVideosChannelsHashtags $dataSourcesVideosChannelsHashtags
+ * @property \SourcesVideosChannelsLinks    $dataSourcesVideosChannelsLinks
  * @property \SourcesVideosClips            $dataSourcesVideosClips
  * @property \SourcesVideosClipsComments    $dataSourcesVideosClipsComments
  * @property \SourcesVideosClipsFiles       $dataSourcesVideosClipsFiles
@@ -49,9 +51,8 @@ require_once 'classes/autoload.php';
  * @property \SourcesVideosClipsTags        $dataSourcesVideosClipsTags
  * @property \SourcesVideosHashtags         $dataSourcesVideosHashtags
  * @property \SourcesVideosLinks            $dataSourcesVideosLinks
- * @property \SourcesVideosSubscribers      $dataSourcesVideosSubscribers
+ * @property \SourcesVideosStats            $dataSourcesVideosStats
  * @property \SourcesVideosRaw              $dataSourcesVideosRaw
- * @property \SourcesVideosTags             $dataSourcesVideosTags
  * @property \SourcesVideosUsers            $dataSourcesVideosUsers
  */
 class ModSourcesController extends Common {

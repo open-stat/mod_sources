@@ -1,6 +1,5 @@
 <?php
 use Core2\Mod\Sources;
-use \Alaouy\Youtube\Youtube;
 
 require_once DOC_ROOT . 'core2/inc/classes/Common.php';
 require_once "classes/autoload.php";
@@ -238,7 +237,7 @@ class ModSourcesCli extends Common {
 
 
     /**
-     * Телеграм: Получение старых сообщений из чатов
+     * Телеграм: Получение истории сообщений из чатов
      * @return void
      * @throws \danog\MadelineProto\Exception
      * @throws Exception
@@ -367,7 +366,18 @@ class ModSourcesCli extends Common {
                     $tg_account->service->restart();
 
                 } elseif ($e->getMessage() == 'This peer is not present in the internal peer database' && $chat->peer_name) {
-                    $tg_account->dialogs->getDialogInfo($chat->peer_name);
+                    // Если не удастся получить канал из телеги, то выключать его
+                    try {
+                        $tg_account->dialogs->getDialogInfo($chat->peer_name);
+                    } catch (\Exception $e) {
+                        $chat->is_connect_sw = 'N';
+                        $chat->save();
+
+                        echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
+                        echo "Chat: {$peer}" .PHP_EOL;
+                        echo $e->getMessage() .PHP_EOL;
+                        echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+                    }
 
                 } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
                     $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
@@ -996,11 +1006,8 @@ class ModSourcesCli extends Common {
      */
     public function ytTest(): void {
 
-        $yt      = new Sources\Video\YouTube();
-        $account = $yt->getAccountByNmbr(1);
-
-        echo '<pre>';
-        echo '</pre>';
+        $yt         = new Sources\Video\YouTube();
+        $yt_account = $yt->getAccountByNmbr(5);
     }
 
 
@@ -1076,8 +1083,10 @@ class ModSourcesCli extends Common {
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+                } else {
+                    $this->sendErrorMessage('Неизвестная ошибка при получении полного описания о канале', $e);
                 }
             }
         }
@@ -1140,8 +1149,10 @@ class ModSourcesCli extends Common {
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+                } else {
+                    $this->sendErrorMessage('Неизвестная ошибка при получении статистики из канала', $e);
                 }
             }
         }
@@ -1232,8 +1243,10 @@ class ModSourcesCli extends Common {
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+                } else {
+                    $this->sendErrorMessage('Неизвестная ошибка при получении истории видео из канала', $e);
                 }
             }
         }
@@ -1320,8 +1333,10 @@ class ModSourcesCli extends Common {
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+                } else {
+                    $this->sendErrorMessage('Неизвестная ошибка при получении новых видео из канала', $e);
                 }
             }
         }
@@ -1382,8 +1397,10 @@ class ModSourcesCli extends Common {
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+                } else {
+                    $this->sendErrorMessage('Неизвестная ошибка при получении полного описания о видео', $e);
                 }
             }
         }
@@ -1391,7 +1408,7 @@ class ModSourcesCli extends Common {
 
 
     /**
-     * YouTube: Получение популярных видео
+     * YouTube: Получение трендов видео
      * @return void
      * @throws Zend_Config_Exception
      */
@@ -1407,14 +1424,15 @@ class ModSourcesCli extends Common {
         // Получить список видео без региона
         $regions[] = '';
 
-        foreach ($yt_accounts as $yt_account) {
-            if ( ! $yt_account->isActiveMethod('yt_account')) {
-                echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
-                continue;
-            }
 
-            try {
-                foreach ($regions as $region) {
+        foreach ($regions as $region) {
+            foreach ($yt_accounts as $yt_account) {
+                try {
+                    if ( ! $yt_account->isActiveMethod('yt_account')) {
+                        echo "Метод неактивен у аккаунта {$yt_account->getNmbr()}" . PHP_EOL;
+                        continue;
+                    }
+
                     $videos = $yt_account->getVideosPopular($region);
 
                     if ( ! empty($videos)) {
@@ -1424,15 +1442,19 @@ class ModSourcesCli extends Common {
                             'count'  => count($videos),
                         ]);
                     }
-                }
 
-            } catch (\Exception $e) {
-                echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
-                echo $e->getMessage() .PHP_EOL;
-                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+                    break;
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
-                    $yt_account->inactiveMethod('yt_account');
+                } catch (\Exception $e) {
+                    echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                    echo $e->getMessage() .PHP_EOL;
+                    echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                    if (str_contains($e->getMessage(), 'quotaExceeded')) {
+                        $yt_account->inactiveMethod('yt_account');
+                    } else {
+                        $this->sendErrorMessage('Неизвестная ошибка при получении трендов видео', $e);
+                    }
                 }
             }
         }
@@ -1475,10 +1497,10 @@ class ModSourcesCli extends Common {
                 $video          = $this->modSources->dataSourcesVideosClips->find($video_id)->current();
                 $video_comments = $yt_account->getVideosComments($video->platform_id, $video->comments_page_token);
 
-                if ( ! empty($channel_videos['results'])) {
-                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_comments', $channel_videos['results'], [
+                if ( ! empty($video_comments['results'])) {
+                    $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_comments', $video_comments['results'], [
                         'date'     => date('Y-m-d H:i:s'),
-                        'count'    => count($channel_videos['results']),
+                        'count'    => count($video_comments['results']),
                         'video_id' => $video->platform_id,
                     ]);
                 }
@@ -1487,6 +1509,7 @@ class ModSourcesCli extends Common {
                     if ( ! empty($video_comments['info']['nextPageToken'])) {
                         $video->comments_page_token = $video_comments['info']['nextPageToken'];
                     } else {
+                        $video->comments_page_token = null;
                         $video->is_load_comments_sw = 'Y';
                     }
                 }
@@ -1495,11 +1518,19 @@ class ModSourcesCli extends Common {
 
             } catch (\Exception $e) {
                 echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
+                echo "Video ID: {$video->id}" .PHP_EOL;
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if (strpos($e->getMessage(), 'quotaExceeded') !== false) {
+                if (str_contains($e->getMessage(), 'commentsDisabled')) {
+                    $video->is_load_comments_sw = 'Y';
+                    $video->save();
+
+                } elseif (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                } else {
+                    $this->sendErrorMessage('Неизвестная ошибка при получении комментариев к видео', $e);
                 }
             }
         }
@@ -1509,18 +1540,123 @@ class ModSourcesCli extends Common {
     /**
      * YouTube: Получение субтитров из видео
      * @return void
+     * @throws Zend_Config_Exception
      */
     public function loadYtVideoSubtitles(): void {
 
+        $yt          = new Sources\Video\YouTube();
+        $yt_accounts = $yt->getAccounts( ['video_subtitles'] );
+
+
+        foreach ($yt_accounts as $yt_account) {
+
+            $clips = $this->modSources->dataSourcesVideosClips->fetchAll(
+                $this->modSources->dataSourcesVideosClips->select()
+                    ->where("is_load_subtitles_sw = 'N'")
+                    ->where("type = 'yt'")
+                    ->order("viewed_count DESC")
+                    ->limit(5)
+            );
+
+            if (empty($clips)) {
+                return;
+            }
+
+
+            foreach ($clips as $clip) {
+
+                try {
+                    $subtitles = $yt_account->getVideoSubtitles($clip->platform_id);
+
+                    if ( ! empty($subtitles)) {
+                        $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_subtitles', $subtitles, [
+                            'date'     => date('Y-m-d H:i:s'),
+                            'video_id' => $clip->platform_id,
+                        ]);
+                    }
+
+                } catch (\Exception $e) {
+                    echo "Video ID: {$clip->id}" .PHP_EOL;
+                    echo $e->getMessage() .PHP_EOL;
+                    echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                    if (str_contains($e->getMessage(), 'quotaExceeded')) {
+                        $yt_account->inactiveMethod('yt_account');
+
+                    } elseif (str_contains($e->getMessage(), '503 Service Unavailable')) {
+                        continue;
+
+                    } else {
+                        $this->sendErrorMessage('Неизвестная ошибка при получении субтитров к видео', $e);
+                    }
+                }
+
+                $clip->is_load_subtitles_sw = 'Y';
+                $clip->save();
+            }
+        }
     }
 
 
     /**
      * YouTube: Получение картинок из видео
      * @return void
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function loadYtVideoImages(): void {
 
+        $video_files = $this->modSources->dataSourcesVideosClipsFiles->fetchAll(
+            $this->modSources->dataSourcesVideosClipsFiles->select()
+                ->where("is_load_sw = 'N'")
+                ->where("content IS NULL")
+                ->where("meta_data IS NOT NULL")
+                ->limit(100)
+        );
+
+        if (empty($video_files)) {
+            return;
+        }
+
+        $client = new GuzzleHttp\Client();
+
+        foreach ($video_files as $video_file) {
+
+            try {
+                $meta_data = json_decode($video_file->meta_data, true);
+
+                $image_url = null;
+
+                if ( ! empty($meta_data['high']) && ! empty($meta_data['high']['url'])) {
+                    $image_url = $meta_data['high']['url'];
+
+                } elseif ( ! empty($meta_data['default']) && ! empty($meta_data['default']['url'])) {
+                    $image_url = $meta_data['default']['url'];
+                }
+
+                if ( ! empty($image_url) && filter_var($image_url, FILTER_VALIDATE_URL)) {
+                    $response = $client->request('GET', $image_url);
+
+                    if ($response->getStatusCode() == 200) {
+                        $file_content = $response->getBody()->getContents();
+
+                        $video_file->content  = $file_content;
+                        $video_file->filename = 'img.jpg';
+                        $video_file->filesize = strlen($file_content);
+                        $video_file->hash     = md5($file_content);
+                        $video_file->type     = 'image/jpg';
+                        $video_file->fieldid  = 'thumb';
+                    }
+                }
+
+            } catch (\Exception $e) {
+                echo "File ID: {$video_file->id}" .PHP_EOL;
+                echo $e->getMessage() .PHP_EOL;
+                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+            }
+
+            $video_file->is_load_sw = 'Y';
+            $video_file->save();
+        }
     }
 
 
@@ -1530,5 +1666,12 @@ class ModSourcesCli extends Common {
      */
     public function parseYtContent(): void {
 
+        $yt_parser = new Sources\Video\YtParser();
+
+        $yt_parser->processChannelInfo(100);
+        $yt_parser->processChannelStats(100);
+        $yt_parser->processVideos(100);
+        $yt_parser->processVideosSubtitles(100);
+        $yt_parser->processVideosComments(100);
     }
 }
