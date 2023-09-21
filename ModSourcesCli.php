@@ -458,7 +458,12 @@ class ModSourcesCli extends Common {
 
                         if ( ! empty($update['update']) &&
                              ! empty($update['update']['_']) &&
-                            in_array($update['update']['_'], [ 'updateChannelUserTyping', 'updateUserStatus' ])
+                            in_array($update['update']['_'], [
+                                'updateChannelUserTyping',
+                                'updateUserStatus',
+                                'updateMessagePoll',
+                                'updateGroupCall'
+                            ])
                         ) {
                             unset($updates[$key]);
                         }
@@ -796,25 +801,28 @@ class ModSourcesCli extends Common {
                 continue;
             }
 
-            try {
-                $api_id          = $tg_account->getApiId();
-                $subscribe_chats = $this->db->fetchAll("
-                    SELECT scas.id,
-                           sc.peer_id,
-                           sc.peer_name,
-                           scas.chat_id,
-                           scas.is_subscribe_need_sw
-                    FROM mod_sources_chats_accounts AS sca
-                        JOIN mod_sources_chats_accounts_subscribes AS scas ON sca.id = scas.account_id
-                        JOIN mod_sources_chats AS sc ON scas.chat_id = sc.id
-                    WHERE sca.account_key = ?
-                      AND scas.is_subscribe_need_sw IS NOT NULL
-                    LIMIT 3
-                ", $api_id);
+            $api_id          = $tg_account->getApiId();
+            $subscribe_chats = $this->db->fetchAll("
+                SELECT scas.id,
+                       sc.peer_id,
+                       sc.peer_name,
+                       scas.chat_id,
+                       scas.is_subscribe_need_sw
+                FROM mod_sources_chats_accounts AS sca
+                    JOIN mod_sources_chats_accounts_subscribes AS scas ON sca.id = scas.account_id
+                    JOIN mod_sources_chats AS sc ON scas.chat_id = sc.id
+                WHERE sca.account_key = ?
+                  AND scas.is_subscribe_need_sw IS NOT NULL
+                LIMIT 3
+            ", $api_id);
 
 
-                foreach ($subscribe_chats as $subscribe_chat) {
-                    $peer = $subscribe_chat['peer_name'] ?: $subscribe_chat['peer_id'];
+            foreach ($subscribe_chats as $subscribe_chat) {
+
+                $subscribe = $this->modSources->dataSourcesChatsAccountsSubscribes->find($subscribe_chat['id'])->current();
+
+                try {
+                    $peer = $subscribe_chat['peer_id'] ?: $subscribe_chat['peer_name'];
 
                     if ($subscribe_chat['is_subscribe_need_sw'] == 'Y') {
                         $tg_account->dialogs->joinChannel($peer);
@@ -822,29 +830,38 @@ class ModSourcesCli extends Common {
                         $tg_account->dialogs->leaveChannel($peer);
                     }
 
-
-                    $subscribe = $this->modSources->dataSourcesChatsAccountsSubscribes->find($subscribe_chat['id'])->current();
                     $subscribe->is_subscribe_sw      = $subscribe_chat['is_subscribe_need_sw'];
                     $subscribe->is_subscribe_need_sw = null;
                     $subscribe->save();
-                }
 
-            } catch (\Exception $e) {
-                echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
-                echo $e->getMessage() .PHP_EOL;
-                echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+                } catch (\Exception $e) {
+                    echo "Account: {$tg_account->getApiId()}" .PHP_EOL;
+                    echo $e->getMessage() .PHP_EOL;
+                    echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if ($e->getMessage() == 'The channel was already closed!') {
-                    $tg_account->service->restart();
+                    if ($e->getMessage() == 'The channel was already closed!') {
+                        $tg_account->service->restart();
 
-                } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
-                    $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
+                    } elseif ($e->getMessage() == 'This peer is not present in the internal peer database' && $subscribe_chat['peer_name']) {
+                        // Если не удастся получить канал из телеги, то выключать его
+                        try {
+                            $tg_account->dialogs->getDialogInfo($subscribe_chat['peer_name']);
+                        } catch (\Exception $e) {
+                            $subscribe->is_subscribe_need_sw = null;
+                            $subscribe->save();
 
-                    if (is_numeric($ban_seconds)) {
-                        $tg_account->inactiveMethod('subscribe', $ban_seconds);
+                            echo "Chat: {$subscribe_chat['peer_name']}" .PHP_EOL;
+                        }
+
+                    } elseif (strpos($e->getMessage(), 'FLOOD_WAIT_') === 0) {
+                        $ban_seconds = substr($e->getMessage(), strlen('FLOOD_WAIT_'));
+
+                        if (is_numeric($ban_seconds)) {
+                            $tg_account->inactiveMethod('subscribe', $ban_seconds);
+                        }
+
+                        $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
                     }
-
-                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
                 }
             }
         }
@@ -904,6 +921,7 @@ class ModSourcesCli extends Common {
      * @param int $content_id
      * @return void
      * @throws Exception
+     * @no_cron
      */
     public function viewTgContent(int $content_id): void {
 
@@ -925,6 +943,7 @@ class ModSourcesCli extends Common {
      * @return void
      * @throws Zend_Config_Exception
      * @throws Exception
+     * @no_cron
      */
     public function loginTgSendCode(string $phone): void {
 
@@ -946,6 +965,7 @@ class ModSourcesCli extends Common {
      * @param string $code
      * @return void
      * @throws Exception
+     * @no_cron
      */
     public function loginTgSetCode(string $phone, string $code): void {
 
@@ -968,6 +988,7 @@ class ModSourcesCli extends Common {
      * @param string $password
      * @return void
      * @throws Exception
+     * @no_cron
      */
     public function loginTgSetPassword(string $phone, string $code, string $password): void {
 
@@ -1007,17 +1028,19 @@ class ModSourcesCli extends Common {
     public function ytTest(): void {
 
         $yt         = new Sources\Video\YouTube();
-        $yt_account = $yt->getAccountByNmbr(5);
+        $yt_account = $yt->getAccountByNmbr(2);
+
     }
 
 
     /**
-     * YouTube: Показ содержимого записи из загруженных данных
+     * Видео: Показ содержимого записи из загруженных данных
      * @param int $content_id
      * @return void
      * @throws Exception
+     * @no_cron
      */
-    public function viewYtContent(int $content_id): void {
+    public function viewVideoContent(int $content_id): void {
 
         $row = $this->modSources->dataSourcesVideosRaw->find($content_id)->current();
 
@@ -1028,6 +1051,43 @@ class ModSourcesCli extends Common {
         echo '<pre>';
         print_r(json_decode(gzuncompress($row->content), true));
         echo '</pre>';
+    }
+
+
+    /**
+     * Видео: Поиск в загруженных данных
+     * @param string $type
+     * @param string $query
+     * @param int    $limit
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function searchVideoContent(string $type = '', string $query = '', int $limit = 50): void {
+
+        if (empty($type) || empty($query)) {
+            throw new \Exception('Укажите тип и поисковую строку');
+        }
+
+        $rows = $this->db->fetchAll("
+            SELECT svr.id, svr.content
+            FROM mod_sources_videos_raw AS svr
+            WHERE type = ?
+              AND UNCOMPRESS(svr.content) LIKE ?
+            LIMIT ?
+        ", [
+            $type,
+            "%{$query}%",
+            $limit
+        ]);
+
+        if ( ! empty($rows)) {
+            foreach ($rows as $row) {
+                echo '<pre>';
+                print_r(json_decode(gzuncompress($row['content']), true));
+                echo '</pre>';
+            }
+        }
     }
 
 
@@ -1071,6 +1131,7 @@ class ModSourcesCli extends Common {
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_info', $channel_info, [
                         'date'       => date('Y-m-d H:i:s'),
                         'channel_id' => $channel->channel_id,
+                        'name'       => $channel->name,
                     ]);
                 }
 
@@ -1085,6 +1146,15 @@ class ModSourcesCli extends Common {
 
                 if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                } elseif (empty($e->getMessage()) ||
+                    str_contains($e->getMessage(), 'Empty reply from server') ||
+                    str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                    str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '502 Bad Gateway')
+                ) {
+                    continue;
+
                 } else {
                     $this->sendErrorMessage('Неизвестная ошибка при получении полного описания о канале', $e);
                 }
@@ -1151,6 +1221,15 @@ class ModSourcesCli extends Common {
 
                 if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                } elseif (empty($e->getMessage()) ||
+                    str_contains($e->getMessage(), 'Empty reply from server') ||
+                    str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                    str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '502 Bad Gateway')
+                ) {
+                    continue;
+
                 } else {
                     $this->sendErrorMessage('Неизвестная ошибка при получении статистики из канала', $e);
                 }
@@ -1245,6 +1324,15 @@ class ModSourcesCli extends Common {
 
                 if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                } elseif (empty($e->getMessage()) ||
+                    str_contains($e->getMessage(), 'Empty reply from server') ||
+                    str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                    str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '502 Bad Gateway')
+                ) {
+                    continue;
+
                 } else {
                     $this->sendErrorMessage('Неизвестная ошибка при получении истории видео из канала', $e);
                 }
@@ -1275,8 +1363,8 @@ class ModSourcesCli extends Common {
                     ->where("type = 'yt'")
                     ->where("is_connect_sw = 'Y'")
                     ->where("channel_id IS NOT NULL")
-                    ->where("date_update_videos_sw IS NULL OR date_update_videos_sw != NOW()")
-                    ->order("date_update_videos_sw ASC")
+                    ->where("date_update_videos IS NULL OR date_update_videos != NOW()")
+                    ->order("date_update_videos ASC")
                     ->limit(1)
             );
 
@@ -1325,7 +1413,7 @@ class ModSourcesCli extends Common {
                 }
 
 
-                $channel->date_update_videos_sw = new \Zend_Db_Expr('NOW()');
+                $channel->date_update_videos = new \Zend_Db_Expr('NOW()');
                 $channel->save();
 
             } catch (\Exception $e) {
@@ -1335,6 +1423,15 @@ class ModSourcesCli extends Common {
 
                 if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                } elseif (empty($e->getMessage()) ||
+                    str_contains($e->getMessage(), 'Empty reply from server') ||
+                    str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                    str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '502 Bad Gateway')
+                ) {
+                    continue;
+
                 } else {
                     $this->sendErrorMessage('Неизвестная ошибка при получении новых видео из канала', $e);
                 }
@@ -1399,6 +1496,15 @@ class ModSourcesCli extends Common {
 
                 if (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                } elseif (empty($e->getMessage()) ||
+                          str_contains($e->getMessage(), 'Empty reply from server') ||
+                          str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                          str_contains($e->getMessage(), '503 Service Unavailable') ||
+                          str_contains($e->getMessage(), '502 Bad Gateway')
+                ) {
+                    continue;
+
                 } else {
                     $this->sendErrorMessage('Неизвестная ошибка при получении полного описания о видео', $e);
                 }
@@ -1452,6 +1558,16 @@ class ModSourcesCli extends Common {
 
                     if (str_contains($e->getMessage(), 'quotaExceeded')) {
                         $yt_account->inactiveMethod('yt_account');
+
+                    } elseif (
+                        empty($e->getMessage()) ||
+                        str_contains($e->getMessage(), 'Empty reply from server') ||
+                        str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                        str_contains($e->getMessage(), '503 Service Unavailable') ||
+                        str_contains($e->getMessage(), '502 Bad Gateway')
+                    ) {
+                        continue;
+
                     } else {
                         $this->sendErrorMessage('Неизвестная ошибка при получении трендов видео', $e);
                     }
@@ -1485,6 +1601,8 @@ class ModSourcesCli extends Common {
                 WHERE sv.type = 'yt'
                   AND sv.is_connect_sw = 'Y'
                   AND svc.is_load_comments_sw = 'N' 
+                  AND (DATE_ADD(svc.date_platform_created, INTERVAL 7 DAY) < NOW() OR 
+                       DATE_ADD(svc.date_created, INTERVAL 7 DAY) < NOW())
                 ORDER BY svc.viewed_count DESC
                 LIMIT 1
             ");
@@ -1528,6 +1646,16 @@ class ModSourcesCli extends Common {
 
                 } elseif (str_contains($e->getMessage(), 'quotaExceeded')) {
                     $yt_account->inactiveMethod('yt_account');
+
+                }  elseif (
+                    empty($e->getMessage()) ||
+                    str_contains($e->getMessage(), 'processingFailure') ||
+                    str_contains($e->getMessage(), 'Empty reply from server') ||
+                    str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                    str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '502 Bad Gateway')
+                ) {
+                    continue;
 
                 } else {
                     $this->sendErrorMessage('Неизвестная ошибка при получении комментариев к видео', $e);
@@ -1583,10 +1711,19 @@ class ModSourcesCli extends Common {
                     if (str_contains($e->getMessage(), 'quotaExceeded')) {
                         $yt_account->inactiveMethod('yt_account');
 
-                    } elseif (str_contains($e->getMessage(), '503 Service Unavailable')) {
-                        continue;
+                    } elseif (
+                        empty($e->getMessage()) ||
+                        str_contains($e->getMessage(), 'Empty reply from server') ||
+                        str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
+                        str_contains($e->getMessage(), '503 Service Unavailable') ||
+                        str_contains($e->getMessage(), '502 Bad Gateway')
 
-                    } else {
+                    ) {
+                       continue;
+
+                    } elseif ( ! str_contains($e->getMessage(), '404 Not Found') &&
+                               ! str_contains($e->getMessage(), '403 Forbidden')
+                    ) {
                         $this->sendErrorMessage('Неизвестная ошибка при получении субтитров к видео', $e);
                     }
                 }
@@ -1610,7 +1747,7 @@ class ModSourcesCli extends Common {
                 ->where("is_load_sw = 'N'")
                 ->where("content IS NULL")
                 ->where("meta_data IS NOT NULL")
-                ->limit(100)
+                ->limit(150)
         );
 
         if (empty($video_files)) {

@@ -61,6 +61,10 @@ class SourcesVideos extends \Zend_Db_Table_Abstract {
 
         $channel = $this->getRowByTypeChannelId($type, $channel_id);
 
+        if (empty($channel) && ! empty($options['name'])) {
+            $channel = $this->getRowByTypeName($type, $options['name']);
+        }
+
         if (empty($channel)) {
             $channel = $this->createRow([
                 'type'                  => $type,
@@ -80,6 +84,7 @@ class SourcesVideos extends \Zend_Db_Table_Abstract {
         } else {
             $is_save = false;
 
+            if (empty($channel->channel_id)                 && $channel_id)                                                          { $channel->channel_id            = $channel_id;                       $is_save = true; }
             if ( ! empty($options['name'])                  && $channel->name                  != $options['name'])                  { $channel->name                  = $options['name'];                  $is_save = true; }
             if ( ! empty($options['title'])                 && $channel->title                 != $options['title'])                 { $channel->title                 = $options['title'];                 $is_save = true; }
             if ( ! empty($options['description'])           && $channel->description           != $options['description'])           { $channel->description           = $options['description'];           $is_save = true; }

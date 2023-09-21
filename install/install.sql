@@ -111,30 +111,31 @@ CREATE TABLE `mod_sources_sites_contents_raw` (
 ###
 
 CREATE TABLE `mod_sources_chats` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `messenger_type` enum('tg') NOT NULL,
-  `type` enum('channel','group') DEFAULT NULL,
-  `peer_name` varchar(255) DEFAULT NULL,
-  `peer_id` varchar(100) DEFAULT NULL,
-  `title` varchar(255) DEFAULT NULL,
-  `description` varchar(500) DEFAULT NULL,
-  `geolocation` varchar(255) DEFAULT NULL,
-  `subscribers_count` int unsigned DEFAULT NULL,
-  `date_state_info` datetime DEFAULT NULL,
-  `old_message_id` int unsigned DEFAULT NULL,
-  `new_message_id` int unsigned DEFAULT NULL,
-  `date_old_message` timestamp NULL DEFAULT NULL,
-  `date_new_message` timestamp NULL DEFAULT NULL,
-  `date_history_load` date DEFAULT NULL,
-  `tgstat` json DEFAULT NULL,
-  `is_connect_sw` enum('Y','N') NOT NULL DEFAULT 'N',
-  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `title` (`title`),
-  KEY `peer_name` (`peer_name`),
-  KEY `type` (`type`),
-  KEY `peer_id` (`peer_id`)
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `messenger_type` enum('tg') NOT NULL,
+    `type` enum('channel','group') DEFAULT NULL,
+    `peer_name` varchar(255) DEFAULT NULL,
+    `peer_id` varchar(100) DEFAULT NULL,
+    `title` varchar(255) DEFAULT NULL,
+    `description` varchar(500) DEFAULT NULL,
+    `geolocation` varchar(255) DEFAULT NULL,
+    `subscribers_count` int unsigned DEFAULT NULL,
+    `date_state_info` datetime DEFAULT NULL,
+    `old_message_id` int unsigned DEFAULT NULL,
+    `new_message_id` int unsigned DEFAULT NULL,
+    `date_old_message` timestamp NULL DEFAULT NULL,
+    `date_new_message` timestamp NULL DEFAULT NULL,
+    `date_history_load` date DEFAULT NULL,
+    `tgstat` json DEFAULT NULL,
+    `is_connect_sw` enum('Y','N') NOT NULL DEFAULT 'N',
+    `is_extreme_sw` enum('N','Y') NOT NULL DEFAULT 'N',
+    `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `title` (`title`),
+    KEY `peer_name` (`peer_name`),
+    KEY `type` (`type`),
+    KEY `peer_id` (`peer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_chats_accounts` (
@@ -391,7 +392,7 @@ CREATE TABLE `mod_sources_videos` (
     `default_lang` varchar(10) DEFAULT NULL,
     `meta_data` json DEFAULT NULL,
     `date_state_info` date DEFAULT NULL,
-    `date_update_videos_sw` date DEFAULT NULL,
+    `date_update_videos` date DEFAULT NULL,
     `date_platform_created` date DEFAULT NULL,
     `date_load_last_clip` timestamp NULL DEFAULT NULL,
     `date_load_old_clip` timestamp NULL DEFAULT NULL,
@@ -517,6 +518,8 @@ CREATE TABLE `mod_sources_videos_clips` (
     KEY `is_load_comments_sw` (`is_load_comments_sw`),
     KEY `viewed_count` (`viewed_count` DESC),
     KEY `type` (`type`),
+    KEY `date_platform_created` (`date_platform_created` DESC),
+    KEY `is_load_info_sw` (`is_load_info_sw`),
     CONSTRAINT `fk1_mod_sources_videos_clips` FOREIGN KEY (`channel_id`) REFERENCES `mod_sources_videos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

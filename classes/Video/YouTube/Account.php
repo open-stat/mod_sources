@@ -63,7 +63,7 @@ class Account extends \Common {
         $inactive_methods = $account->inactive_methods ? @json_decode($account->inactive_methods, true) : [];
         $inactive_methods = is_array($inactive_methods) ? $inactive_methods : [];
 
-        $inactive_methods[$method] = date('Y-m-d 03:30:00', strtotime("+1 day"));
+        $inactive_methods[$method] = date('Y-m-d 10:00:00', strtotime("+1 day"));
 
         $account->inactive_methods = json_encode($inactive_methods);
         $account->save();
@@ -156,7 +156,7 @@ class Account extends \Common {
             $params['pageToken'] = $page_token;
         }
 
-        $api_url = $this->connection->getApi('commentThreads.list');
+        $api_url  = $this->connection->getApi('commentThreads.list');
         $api_data = $this->connection->api_get($api_url, $params);
 
         $result = [
