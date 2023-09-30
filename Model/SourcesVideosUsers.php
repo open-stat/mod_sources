@@ -35,10 +35,16 @@ class SourcesVideosUsers extends \Zend_Db_Table_Abstract {
         $user = $this->getRowByTypePlatformId($type, $platform_id);
 
         if (empty($user)) {
+            if ( ! empty($options['name'])) {
+                $name = mb_strlen($options['name']) > 255
+                    ? mb_substr($options['name'], 0, 255)
+                    : $options['name'];
+            }
+
             $user = $this->createRow([
                 'platform_id'        => $platform_id,
                 'type'               => $type,
-                'name'               => $options['name'] ?? null,
+                'name'               => $name ?? null,
                 'profile_url'        => $options['profile_url'] ?? null,
                 'profile_avatar_url' => $options['profile_avatar_url'] ?? null,
             ]);

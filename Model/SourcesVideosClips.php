@@ -68,6 +68,11 @@ class SourcesVideosClips extends \Zend_Db_Table_Abstract {
             $duration = null;
         }
 
+
+        if ( ! empty($options['url']) && mb_strlen($options['url']) > 255) {
+            $options['url'] = mb_substr($options['url'], 0, 255);
+        }
+
         if (empty($clip)) {
             $clip = $this->createRow([
                 'platform_id'           => $platform_id,

@@ -106,8 +106,8 @@ abstract class Common extends \Common {
 
 
         $fwd_chat_id = ! empty($message['fwd_from']) &&
-                       ! empty($message['from_id']['from_id']) &&
-                       ! empty($message['from_id']['from_id']['channel_id'])
+                       ! empty($message['fwd_from']['from_id']) &&
+                       ! empty($message['fwd_from']['from_id']['channel_id'])
             ? $message['fwd_from']['from_id']['channel_id']
             : null;
 

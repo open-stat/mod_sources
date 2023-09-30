@@ -50,6 +50,8 @@ class YtParser extends \Common {
                 $this->db->rollback();
                 echo $e->getMessage() . PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                $this->sendErrorMessage('Ошибка обработки видео роликов', $e);
             }
         }
     }
@@ -108,6 +110,8 @@ class YtParser extends \Common {
                 $this->db->rollback();
                 echo $e->getMessage() . PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                $this->sendErrorMessage('Ошибка обработки субтитров', $e);
             }
         }
     }
@@ -165,6 +169,8 @@ class YtParser extends \Common {
                 $this->db->rollback();
                 echo $e->getMessage() . PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                $this->sendErrorMessage('Ошибка обработки комментариев', $e);
             }
         }
     }
@@ -216,6 +222,8 @@ class YtParser extends \Common {
                 $this->db->rollback();
                 echo $e->getMessage() . PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                $this->sendErrorMessage('Ошибка обработки субтитров', $e);
             }
         }
     }
@@ -274,6 +282,8 @@ class YtParser extends \Common {
                 $this->db->rollback();
                 echo $e->getMessage() . PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
+
+                $this->sendErrorMessage('Ошибка обработки статистика каналов', $e);
             }
         }
     }

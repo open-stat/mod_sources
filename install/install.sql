@@ -509,6 +509,7 @@ CREATE TABLE `mod_sources_videos_clips` (
     `is_load_comments_sw` enum('Y','N') NOT NULL DEFAULT 'N',
     `is_load_info_sw` enum('Y','N') NOT NULL DEFAULT 'N',
     `is_load_subtitles_sw` enum('Y','N') NOT NULL DEFAULT 'N',
+    `date_load_deferred` timestamp NULL DEFAULT NULL,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

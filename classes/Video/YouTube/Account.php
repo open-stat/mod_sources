@@ -63,7 +63,10 @@ class Account extends \Common {
         $inactive_methods = $account->inactive_methods ? @json_decode($account->inactive_methods, true) : [];
         $inactive_methods = is_array($inactive_methods) ? $inactive_methods : [];
 
-        $inactive_methods[$method] = date('Y-m-d 10:00:00', strtotime("+1 day"));
+        $random_min = rand(0, 59);
+        $random_min = str_pad($random_min, 2, '0', STR_PAD_LEFT);
+
+        $inactive_methods[$method] = date("Y-m-d 10:{$random_min}:00", strtotime("+1 day"));
 
         $account->inactive_methods = json_encode($inactive_methods);
         $account->save();
