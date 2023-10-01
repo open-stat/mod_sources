@@ -3,6 +3,7 @@ namespace Core2\Mod\Sources\Chats;
 
 /**
  * @property \ModSourcesController $modSources
+ * @property \ModMetricsApi        $apiMetrics
  */
 class TgParser extends \Common {
 
@@ -34,18 +35,36 @@ class TgParser extends \Common {
                     foreach ($content['users'] as $user) {
                         $tg_parser_history->saveUser($user);
                     }
+
+                    $this->apiMetrics->incPrometheus('core2_sources_tg_process', count($content['users']), [
+                        'labels'   => ['action' => 'channel_history_users'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
                 }
 
                 if ( ! empty($content['chats'])) {
                     foreach ($content['chats'] as $chat) {
                         $tg_parser_history->saveChat($chat);
                     }
+
+                    $this->apiMetrics->incPrometheus('core2_sources_tg_process', count($content['chats']), [
+                        'labels'   => ['action' => 'channel_history_chats'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
                 }
 
                 if ( ! empty($content['messages'])) {
                     foreach ($content['messages'] as $message) {
                         $tg_parser_history->saveMessage($message);
                     }
+
+                    $this->apiMetrics->incPrometheus('core2_sources_tg_process', count($content['messages']), [
+                        'labels'   => ['action' => 'channel_history_messages'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
                 }
 
                 $item->is_parsed_sw = 'Y';
@@ -103,6 +122,12 @@ class TgParser extends \Common {
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
 
+                $this->apiMetrics->incPrometheus('core2_sources_tg_process', count($content), [
+                    'labels'   => ['action' => 'channel_updates'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
+
                 $this->db->commit();
 
             } catch (\Exception $e) {
@@ -149,6 +174,12 @@ class TgParser extends \Common {
 
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
+
+                $this->apiMetrics->incPrometheus('core2_sources_tg_process', 1, [
+                    'labels'   => ['action' => 'channel_info'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
 
                 $this->db->commit();
 

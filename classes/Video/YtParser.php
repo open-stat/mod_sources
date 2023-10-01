@@ -3,6 +3,7 @@ namespace Core2\Mod\Sources\Video;
 
 /**
  * @property \ModSourcesController $modSources
+ * @property \ModMetricsApi        $apiMetrics
  */
 class YtParser extends \Common {
 
@@ -43,6 +44,13 @@ class YtParser extends \Common {
 
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
+
+
+                $this->apiMetrics->incPrometheus('core2_sources_yt_process', 1, [
+                    'labels'   => ['action' => 'video'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
 
                 $this->db->commit();
 
@@ -104,6 +112,12 @@ class YtParser extends \Common {
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
 
+                $this->apiMetrics->incPrometheus('core2_sources_yt_process', 1, [
+                    'labels'   => ['action' => 'video_subtitles'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
+
                 $this->db->commit();
 
             } catch (\Exception $e) {
@@ -163,6 +177,13 @@ class YtParser extends \Common {
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
 
+
+                $this->apiMetrics->incPrometheus('core2_sources_yt_process', 1, [
+                    'labels'   => ['action' => 'video_comments'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
+
                 $this->db->commit();
 
             } catch (\Exception $e) {
@@ -215,6 +236,12 @@ class YtParser extends \Common {
 
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
+
+                $this->apiMetrics->incPrometheus('core2_sources_yt_process', 1, [
+                    'labels'   => ['action' => 'channel_info'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
 
                 $this->db->commit();
 
@@ -275,6 +302,12 @@ class YtParser extends \Common {
 
                 $content_item->is_parsed_sw = 'Y';
                 $content_item->save();
+
+                $this->apiMetrics->incPrometheus('core2_sources_yt_process', count($content), [
+                    'labels'   => ['action' => 'channel_stat'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
 
                 $this->db->commit();
 

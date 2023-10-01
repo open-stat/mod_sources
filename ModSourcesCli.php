@@ -9,6 +9,7 @@ require_once "classes/autoload.php";
  * @property ModSourcesController $modSources
  * @property ModProxyController   $modProxy
  * @property ModCronController    $modCron
+ * @property ModMetricsApi        $apiMetrics
  */
 class ModSourcesCli extends Common {
 
@@ -120,6 +121,13 @@ class ModSourcesCli extends Common {
                                 case 'text': break;
                             }
 
+
+                            $this->apiMetrics->incPrometheus('core2_sources_site_load', 1, [
+                                'labels'   => ['action' => 'site'],
+                                'job'      => 'core2',
+                                'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                            ]);
+
                         } catch (\Exception $e) {
                             echo $e->getMessage() . PHP_EOL;
                         }
@@ -209,6 +217,13 @@ class ModSourcesCli extends Common {
                                 $page_raw->status = 'complete';
                                 $page_raw->note   = null;
                                 $page_raw->save();
+
+
+                                $this->apiMetrics->incPrometheus('core2_sources_site_process', 1, [
+                                    'labels'   => ['action' => 'site_page'],
+                                    'job'      => 'core2',
+                                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                                ]);
                                 break;
 
                             case 'json': break;
@@ -352,6 +367,13 @@ class ModSourcesCli extends Common {
                             $chat->date_old_message = $chat_date_old->format('Y-m-d H:i:s');
                             $chat->date_new_message = $chat_date_new->format('Y-m-d H:i:s');
                             $chat->save();
+
+
+                            $this->apiMetrics->incPrometheus('core2_sources_tg_load', $count_messages, [
+                                'labels'   => ['action' => 'channel_history'],
+                                'job'      => 'core2',
+                                'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                            ]);
                         }
                     }
                 }
@@ -474,6 +496,12 @@ class ModSourcesCli extends Common {
                             'date'          => date('Y-m-d H:i:s'),
                             'count_updates' => count($updates),
                         ]);
+
+                        $this->apiMetrics->incPrometheus('core2_sources_tg_load', count($updates), [
+                            'labels'   => ['action' => 'channel_update'],
+                            'job'      => 'core2',
+                            'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                        ]);
                     }
                 }
 
@@ -567,6 +595,12 @@ class ModSourcesCli extends Common {
                         'peer_id'   => $dialog['id'] ?? null,
                         'peer_name' => $dialog['username'] ?? null,
                         'date'      => date('Y-m-d H:i:s'),
+                    ]);
+
+                    $this->apiMetrics->incPrometheus('core2_sources_tg_load', 1, [
+                        'labels'   => ['action' => 'channel_info'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
                     ]);
                 }
 
@@ -781,6 +815,19 @@ class ModSourcesCli extends Common {
                     }
                 }
             }
+
+
+            $this->apiMetrics->incPrometheus('core2_sources_tg_load', count($top_domain['channels']), [
+                'labels'   => ['action' => 'tgstat_channels'],
+                'job'      => 'core2',
+                'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+            ]);
+
+            $this->apiMetrics->incPrometheus('core2_sources_tg_load', count($top_domain['groups']), [
+                'labels'   => ['action' => 'tgstat_groups'],
+                'job'      => 'core2',
+                'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+            ]);
         }
     }
 
@@ -1139,6 +1186,12 @@ class ModSourcesCli extends Common {
                 $channel->is_load_info_sw = 'Y';
                 $channel->save();
 
+                $this->apiMetrics->incPrometheus('core2_sources_yt_load', 1, [
+                    'labels'   => ['action' => 'channel_info'],
+                    'job'      => 'core2',
+                    'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                ]);
+
             } catch (\Exception $e) {
                 echo "Account: {$yt_account->getNmbr()}" .PHP_EOL;
                 echo $e->getMessage() .PHP_EOL;
@@ -1215,6 +1268,12 @@ class ModSourcesCli extends Common {
                             $channel->save();
                         }
                     }
+
+                    $this->apiMetrics->incPrometheus('core2_sources_yt_load', count($channels_info), [
+                        'labels'   => ['action' => 'channels_stat'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
                 }
 
             } catch (\Exception $e) {
@@ -1317,6 +1376,12 @@ class ModSourcesCli extends Common {
                     $channel->date_load_old_clip  = $date_old_created;
                     $channel->save();
 
+                    $this->apiMetrics->incPrometheus('core2_sources_yt_load', count($channel_videos['results']), [
+                        'labels'   => ['action' => 'video_history'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
+
                 } else {
                     $channel->is_load_history_sw = 'Y';
                     $channel->save();
@@ -1416,6 +1481,11 @@ class ModSourcesCli extends Common {
                         'channel_id' => $channel->channel_id,
                     ]);
 
+                    $this->apiMetrics->incPrometheus('core2_sources_yt_load', count($channel_videos['results']), [
+                        'labels'   => ['action' => 'video_new'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
 
                     $channel->date_load_last_clip = $date_last_created;
                     $channel->date_load_old_clip  = $date_old_created;
@@ -1499,6 +1569,13 @@ class ModSourcesCli extends Common {
                             $video->save();
                         }
                     }
+
+
+                    $this->apiMetrics->incPrometheus('core2_sources_yt_load', count($videos), [
+                        'labels'   => ['action' => 'video_info'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                    ]);
                 }
 
             } catch (\Exception $e) {
@@ -1561,6 +1638,13 @@ class ModSourcesCli extends Common {
                             'date'   => date('Y-m-d H:i:s'),
                             'region' => $region,
                             'count'  => count($videos),
+                        ]);
+
+
+                        $this->apiMetrics->incPrometheus('core2_sources_yt_load', count($videos), [
+                            'labels'   => ['action' => 'videos_popular'],
+                            'job'      => 'core2',
+                            'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
                         ]);
                     }
 
@@ -1638,6 +1722,13 @@ class ModSourcesCli extends Common {
                         'date'     => date('Y-m-d H:i:s'),
                         'count'    => count($video_comments['results']),
                         'video_id' => $video->platform_id,
+                    ]);
+
+
+                    $this->apiMetrics->incPrometheus('core2_sources_yt_load', count($video_comments['results']), [
+                        'labels'   => ['action' => 'video_comments'],
+                        'job'      => 'core2',
+                        'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
                     ]);
                 }
 
@@ -1722,6 +1813,12 @@ class ModSourcesCli extends Common {
                         $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_subtitles', $subtitles, [
                             'date'     => date('Y-m-d H:i:s'),
                             'video_id' => $clip->platform_id,
+                        ]);
+
+                        $this->apiMetrics->incPrometheus('core2_sources_yt_load', 1, [
+                            'labels'   => ['action' => 'video_subtitles'],
+                            'job'      => 'core2',
+                            'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
                         ]);
                     }
 
@@ -1809,6 +1906,13 @@ class ModSourcesCli extends Common {
                         $video_file->hash     = md5($file_content);
                         $video_file->type     = 'image/jpg';
                         $video_file->fieldid  = 'thumb';
+
+
+                        $this->apiMetrics->incPrometheus('core2_sources_yt_load', 1, [
+                            'labels'   => ['action' => 'video_image'],
+                            'job'      => 'core2',
+                            'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                        ]);
                     }
                 }
 
