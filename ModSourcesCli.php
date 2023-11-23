@@ -114,6 +114,13 @@ class ModSourcesCli extends Common {
                                         ];
 
                                         $loader->saveSourceContent($source_id, $page_item['url'], $content, $options);
+
+
+                                        $this->apiMetrics->incPrometheus('core2_sources_site_load', 1, [
+                                            'labels'   => ['action' => 'site_page'],
+                                            'job'      => 'core2',
+                                            'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                                        ]);
                                     }
                                     break;
 
@@ -130,6 +137,12 @@ class ModSourcesCli extends Common {
 
                         } catch (\Exception $e) {
                             echo $e->getMessage() . PHP_EOL;
+
+                            $this->apiMetrics->incPrometheus('core2_sources_site_load', 1, [
+                                'labels'   => ['action' => 'site_empty'],
+                                'job'      => 'core2',
+                                'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
+                            ]);
                         }
                     }
                 }
