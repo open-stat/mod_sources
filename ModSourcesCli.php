@@ -1206,7 +1206,9 @@ class ModSourcesCli extends Common {
                     str_contains($e->getMessage(), 'Empty reply from server') ||
                     str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                     str_contains($e->getMessage(), '500 Internal Server Error') ||
+                    str_contains($e->getMessage(), '500 Internal error encountered') ||
                     str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                     str_contains($e->getMessage(), '502 Bad Gateway')
                 ) {
                     continue;
@@ -1290,7 +1292,9 @@ class ModSourcesCli extends Common {
                     str_contains($e->getMessage(), 'Empty reply from server') ||
                     str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                     str_contains($e->getMessage(), '500 Internal Server Error') ||
+                    str_contains($e->getMessage(), '500 Internal error encountered') ||
                     str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                     str_contains($e->getMessage(), '502 Bad Gateway')
                 ) {
                     continue;
@@ -1402,7 +1406,9 @@ class ModSourcesCli extends Common {
                     str_contains($e->getMessage(), 'Empty reply from server') ||
                     str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                     str_contains($e->getMessage(), '500 Internal Server Error') ||
+                    str_contains($e->getMessage(), '500 Internal error encountered') ||
                     str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                     str_contains($e->getMessage(), '502 Bad Gateway')
                 ) {
                     continue;
@@ -1509,7 +1515,9 @@ class ModSourcesCli extends Common {
                     str_contains($e->getMessage(), 'Empty reply from server') ||
                     str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                     str_contains($e->getMessage(), '500 Internal Server Error') ||
+                    str_contains($e->getMessage(), '500 Internal error encountered') ||
                     str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                     str_contains($e->getMessage(), '502 Bad Gateway')
                 ) {
                     continue;
@@ -1543,7 +1551,7 @@ class ModSourcesCli extends Common {
                        svc.platform_id
                 FROM mod_sources_videos_clips AS svc
                     JOIN mod_sources_videos AS sv ON sv.id = svc.channel_id
-                WHERE sv.type = 'yt'
+                WHERE svc.type = 'yt'
                   AND sv.is_connect_sw = 'Y'
                   AND svc.is_load_info_sw = 'N'
                 LIMIT 50
@@ -1592,7 +1600,9 @@ class ModSourcesCli extends Common {
                           str_contains($e->getMessage(), 'Empty reply from server') ||
                           str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                           str_contains($e->getMessage(), '500 Internal Server Error') ||
+                          str_contains($e->getMessage(), '500 Internal error encountered') ||
                           str_contains($e->getMessage(), '503 Service Unavailable') ||
+                          str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                           str_contains($e->getMessage(), '502 Bad Gateway')
                 ) {
                     continue;
@@ -1665,7 +1675,9 @@ class ModSourcesCli extends Common {
                         str_contains($e->getMessage(), 'Empty reply from server') ||
                         str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                         str_contains($e->getMessage(), '500 Internal Server Error') ||
+                        str_contains($e->getMessage(), '500 Internal error encountered') ||
                         str_contains($e->getMessage(), '503 Service Unavailable') ||
+                        str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                         str_contains($e->getMessage(), '502 Bad Gateway')
                     ) {
                         continue;
@@ -1700,7 +1712,7 @@ class ModSourcesCli extends Common {
                 SELECT svc.id
                 FROM mod_sources_videos_clips AS svc
                     JOIN mod_sources_videos AS sv ON sv.id = svc.channel_id
-                WHERE sv.type = 'yt'
+                WHERE svc.type = 'yt'
                   AND sv.is_connect_sw = 'Y'
                   AND svc.is_load_comments_sw = 'N' 
                   AND (DATE_ADD(svc.date_platform_created, INTERVAL 7 DAY) < NOW() OR 
@@ -1749,7 +1761,9 @@ class ModSourcesCli extends Common {
                 echo $e->getMessage() .PHP_EOL;
                 echo $e->getTraceAsString() . PHP_EOL . PHP_EOL;
 
-                if (str_contains($e->getMessage(), 'commentsDisabled')) {
+                if (str_contains($e->getMessage(), 'commentsDisabled') ||
+                    str_contains($e->getMessage(), 'Error 404 The video identified')
+                ) {
                     $video->is_load_comments_sw = 'Y';
                     $video->save();
 
@@ -1764,7 +1778,9 @@ class ModSourcesCli extends Common {
                     str_contains($e->getMessage(), 'Empty reply from server') ||
                     str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                     str_contains($e->getMessage(), '500 Internal Server Error') ||
+                    str_contains($e->getMessage(), '500 Internal error encountered') ||
                     str_contains($e->getMessage(), '503 Service Unavailable') ||
+                    str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                     str_contains($e->getMessage(), '502 Bad Gateway')
                 ) {
                     continue;
@@ -1795,7 +1811,7 @@ class ModSourcesCli extends Common {
                     ->where("is_load_subtitles_sw = 'N'")
                     ->where("type = 'yt'")
                     ->where("date_load_deferred IS NULL OR date_load_deferred < NOW()")
-                    ->order("viewed_count DESC")
+                   // ->order("viewed_count DESC")
                     ->limit(5)
             );
 
@@ -1837,7 +1853,9 @@ class ModSourcesCli extends Common {
                         str_contains($e->getMessage(), 'Empty reply from server') ||
                         str_contains($e->getMessage(), 'SERVICE_UNAVAILABLE') ||
                         str_contains($e->getMessage(), '500 Internal Server Error') ||
+                        str_contains($e->getMessage(), '500 Internal error encountered') ||
                         str_contains($e->getMessage(), '503 Service Unavailable') ||
+                        str_contains($e->getMessage(), '503 The service is currently unavailable') ||
                         str_contains($e->getMessage(), '502 Bad Gateway')
 
                     ) {

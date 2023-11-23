@@ -17,6 +17,8 @@ abstract class Common extends \Common {
      */
     protected function getHashtag(string $hashtag): \Zend_Db_Table_Row_Abstract {
 
+        $hashtag = mb_substr($hashtag, 0, 255);
+
         if (isset(self::$hashtags[$hashtag])) {
             return self::$hashtags[$hashtag];
         }
@@ -110,7 +112,7 @@ abstract class Common extends \Common {
 
         if ( ! empty($matches[0])) {
             foreach ($matches[0] as $match) {
-                if ( ! empty($match)) {
+                if ( ! empty($match) && mb_strlen($match) < 100) {
                     $hashtags[] = trim($match, '.');
                 }
             }
@@ -272,7 +274,10 @@ abstract class Common extends \Common {
 
             } else {
                 $params = $this->getQueryParams($url);
-                return $params['v'] ?? null;
+
+                if (isset($params['v'])) {
+                    return mb_strlen($params['v']) > 11 ? mb_substr($params['v'], 0, 11) : $params['v'];
+                }
             }
 
         } else if (str_contains($url, 'youtu.be')) {

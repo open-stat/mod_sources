@@ -28,6 +28,7 @@ class SourcesVideosHashtags extends \Zend_Db_Table_Abstract {
      */
     public function save(string $hashtag): \Zend_Db_Table_Row_Abstract  {
 
+        $hashtag     = mb_substr($hashtag, 0, 255);
         $hashtag_row = $this->getRowByHashtag($hashtag);
 
         if (empty($hashtag_row)) {
