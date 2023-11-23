@@ -35,11 +35,17 @@ class Service {
 
     /**
      * Остановка действующего IPС процесса для текущего пользователя.
+     * @param bool $force
      * @return void
      */
-    public function stop(): void {
+    public function stop(bool $force = false): void {
 
-        $this->connection->getMadeline()->stop();
+        if ($force) {
+            exec("ps -ef | grep 'madeline-ipc' | grep -v grep | awk '{print $2}' | xargs -r kill -9");
+            exec("ps -ef | grep 'MadelineProto' | grep -v grep | awk '{print $2}' | xargs -r kill -9");
+        } else {
+            $this->connection->getMadeline()->stop();
+        }
     }
 
 

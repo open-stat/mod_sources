@@ -943,12 +943,12 @@ class ModSourcesCli extends Common {
 
     /**
      * Телеграм: Остановка сервиса
+     * @param string|null $force
      * @return void
-     * @throws Exception
      */
-    public function stopTgService(): void {
+    public function stopTgService(string $force = null): void {
 
-        (new Sources\Chats\Telegram())->stop();
+        (new Sources\Chats\Telegram())->stop((bool)$force);
     }
 
 

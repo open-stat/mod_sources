@@ -98,14 +98,15 @@ class Telegram extends Connections {
 
     /**
      * Остановка сервиса
+     * @param bool $force
      * @return void
      */
-    public function stop(): void {
+    public function stop(bool $force = false): void {
 
         $accounts = $this->getAccounts();
 
         foreach ($accounts as $account) {
-            $account->service->stop();
+            $account->service->stop($force);
         }
     }
 

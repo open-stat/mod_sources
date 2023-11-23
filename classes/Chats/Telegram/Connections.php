@@ -132,6 +132,9 @@ class Connections extends \Common {
                     $settings     = $this->getMadelineSettings((int)$account['api_id'], $account['api_hash']);
 
 
+                    // Медленный режим
+                    // \danog\MadelineProto\Magic::$isIpcWorker = false;
+
                     $madeline = new MadelineProto\API($session_file, $settings);
                     $options = [
                         'api_id'  => $account['api_id'],
