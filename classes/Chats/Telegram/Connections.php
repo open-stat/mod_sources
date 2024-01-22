@@ -182,14 +182,6 @@ class Connections extends \Common {
                 ->setLevel(MadelineProto\Logger::LEVEL_WARNING)
                 ->setExtra($log_file)
         );
-        $settings->setSerialization(
-            (new MadelineProto\Settings\Serialization())
-                ->setInterval(300)
-        );
-        $settings->setPeer(
-            (new MadelineProto\Settings\Peer())
-                ->setCacheAllPeersOnStartup(true)
-        );
 
         if ($config?->tg?->db?->uri &&
             $config?->tg?->db?->database &&

@@ -349,9 +349,15 @@ class Clips extends Common {
      */
     private function saveComment(int $clip_id, string $comment_id, array $snippet): void {
 
-        $author_channel_id = ! empty($snippet['authorChannelId']) && is_array($snippet['authorChannelId'])
-            ? ($snippet['authorChannelId']['value'] ?? '')
-            : (is_string($snippet['authorChannelId']) ? $snippet['authorChannelId'] : '');
+        if ( ! empty($snippet['authorChannelId'])) {
+            $author_channel_id = is_array($snippet['authorChannelId'])
+                ? ($snippet['authorChannelId']['value'] ?? '')
+                : (is_string($snippet['authorChannelId']) ? $snippet['authorChannelId'] : '');
+
+        } else {
+            $author_channel_id = 'yt_empty_user';
+        }
+
 
         if (empty($author_channel_id)) {
             echo "В комментарии не найдены данные пользователя: " . json_encode($snippet) . PHP_EOL;

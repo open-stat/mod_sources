@@ -3,9 +3,7 @@
   "require": {
     "symfony/css-selector": "v6.1.11",
     "symfony/dom-crawler": "v6.1.11",
-    "danog/madelineproto": "8.0.0-beta144",
-    "amphp/websocket": "v2.0.0-beta.4",
-    "amphp/websocket-client": "v2.0.0-beta.3",
+    "danog/madelineproto": "8.0.0-beta164",
     "alaouy/youtube": "v2.2.5",
     "guzzlehttp/guzzle": "7.*",
     "ext-zlib": "*"
