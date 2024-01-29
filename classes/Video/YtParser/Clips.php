@@ -378,12 +378,22 @@ class Clips extends Common {
             'profile_avatar_url' => $snippet['authorProfileImageUrl'] ?? null,
         ]);
 
+        $date_platform_modify = null;
+
+        if ( ! empty($snippet['updatedAt'])) {
+            $timestamp = strtotime($snippet['updatedAt']);
+
+            if (date('Y', $timestamp) > 1980) {
+                $date_platform_modify = date('Y-m-d H:i:s', $timestamp);
+            }
+        }
+
         $this->modSources->dataSourcesVideosClipsComments->save($clip_id, $comment_id, $user->id, [
             'content'               => $content,
             'reply_to_id'           => $snippet['parentId'] ?? null,
             'likes_count'           => $snippet['likeCount'] ?? null,
             'date_platform_created' => ! empty($snippet['publishedAt']) ? date('Y-m-d H:i:s', strtotime($snippet['publishedAt'])) : null,
-            'date_platform_modify'  => ! empty($snippet['updatedAt']) ? date('Y-m-d H:i:s', strtotime($snippet['updatedAt'])) : null,
+            'date_platform_modify'  => $date_platform_modify,
         ]);
     }
 }
