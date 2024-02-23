@@ -89,14 +89,15 @@ CREATE TABLE `mod_sources_sites_pages_references` (
 CREATE TABLE `mod_sources_sites_contents_raw` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `source_id` int unsigned NOT NULL,
-    `domain` varchar(255) DEFAULT NULL,
-    `url` varchar(255) NOT NULL,
-    `status` enum('pending','process','complete','error')NOT NULL DEFAULT 'pending',
-    `content_type` enum('html','json','text') DEFAULT 'html',
-    `section_name` varchar(255) DEFAULT NULL,
-    `content` longtext CHARACTER SET utf8 NOT NULL,
+    `domain` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL,
+    `url` varchar(300) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+    `status` enum('pending','process','complete','error') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'pending',
+    `content_type` enum('html','json','text') COLLATE utf8mb4_general_ci DEFAULT 'html',
+    `file_name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `file_size` int DEFAULT NULL,
+    `section_name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
     `options` json DEFAULT NULL,
-    `note` varchar(255) DEFAULT NULL,
+    `note` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
     `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -364,7 +365,8 @@ CREATE TABLE `mod_sources_chats_subscribers` (
 CREATE TABLE `mod_sources_chats_content` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `type` varchar(100) NOT NULL,
-    `content` longblob NOT NULL,
+    `file_name` varchar(255) DEFAULT NULL,
+    `file_size` int DEFAULT NULL,
     `meta_data` json DEFAULT NULL,
     `hash` varchar(100) DEFAULT NULL,
     `is_parsed_sw` enum('Y','N') NOT NULL DEFAULT 'N',
@@ -374,7 +376,7 @@ CREATE TABLE `mod_sources_chats_content` (
     KEY `type` (`type`),
     KEY `is_parsed_sw` (`is_parsed_sw`),
     KEY `hash` (`hash`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 ###
 ### Video
@@ -601,7 +603,8 @@ CREATE TABLE `mod_sources_videos_clips_links` (
 CREATE TABLE `mod_sources_videos_raw` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `type` varchar(100) NOT NULL,
-    `content` longblob NOT NULL,
+    `file_name` varchar(255) DEFAULT NULL,
+    `file_size` int DEFAULT NULL,
     `meta_data` json DEFAULT NULL,
     `hash` varchar(100) DEFAULT NULL,
     `is_parsed_sw` enum('Y','N') NOT NULL DEFAULT 'N',
@@ -611,4 +614,4 @@ CREATE TABLE `mod_sources_videos_raw` (
     KEY `type` (`type`),
     KEY `is_parsed_sw` (`is_parsed_sw`),
     KEY `hash` (`hash`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
