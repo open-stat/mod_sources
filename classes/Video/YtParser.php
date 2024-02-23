@@ -1,5 +1,7 @@
 <?php
 namespace Core2\Mod\Sources\Video;
+use Core2\Mod\Sources\Model;
+
 
 /**
  * @property \ModSourcesController $modSources
@@ -20,6 +22,7 @@ class YtParser extends \Common {
             $this->modSources->dataSourcesVideosRaw->select()
                 ->where("type IN('yt_videos_popular', 'yt_videos_info', 'yt_channel_videos')")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
@@ -29,12 +32,15 @@ class YtParser extends \Common {
         }
 
         $yt_parser_clips = new YtParser\Clips();
+        $model           = new Model();
 
         foreach ($contents as $content_item) {
 
             $this->db->beginTransaction();
             try {
-                $content = json_decode(gzuncompress($content_item->content), true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('videos', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
 
                 if ( ! empty($content)) {
                     foreach ($content as $clip) {
@@ -76,6 +82,7 @@ class YtParser extends \Common {
             $this->modSources->dataSourcesVideosRaw->select()
                 ->where("type = 'yt_video_subtitles'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
@@ -85,19 +92,21 @@ class YtParser extends \Common {
         }
 
         $yt_parser_clips = new YtParser\Clips();
+        $model           = new Model();
 
         foreach ($contents as $content_item) {
 
             $this->db->beginTransaction();
             try {
-                $content   = json_decode(gzuncompress($content_item->content), true);
-                $meta_data = json_decode($content_item->meta_data, true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('videos', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
+                $meta_data    = $file_content['meta'];
 
                 if ( ! empty($content) &&
                      ! empty($meta_data) &&
                      ! empty($meta_data['video_id'])
                 ) {
-
                     $clip = $this->modSources->dataSourcesVideosClips->getRowByTypePlatformId('yt', $meta_data['video_id']);
 
                     if (empty($clip)) {
@@ -142,6 +151,7 @@ class YtParser extends \Common {
             $this->modSources->dataSourcesVideosRaw->select()
                 ->where("type = 'yt_video_comments'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
@@ -151,13 +161,16 @@ class YtParser extends \Common {
         }
 
         $yt_parser_clips = new YtParser\Clips();
+        $model           = new Model();
 
         foreach ($contents as $content_item) {
 
             $this->db->beginTransaction();
             try {
-                $content   = json_decode(gzuncompress($content_item->content), true);
-                $meta_data = json_decode($content_item->meta_data, true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('videos', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
+                $meta_data    = $file_content['meta'];
 
                 if ( ! empty($content) &&
                      ! empty($meta_data) &&
@@ -208,6 +221,7 @@ class YtParser extends \Common {
             $this->modSources->dataSourcesVideosRaw->select()
                 ->where("type = 'yt_channel_info'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
@@ -217,20 +231,18 @@ class YtParser extends \Common {
         }
 
         $yt_parser_channels = new YtParser\Channels();
+        $model              = new Model();
 
         foreach ($contents as $content_item) {
             $this->db->beginTransaction();
             try {
-                $content   = json_decode(gzuncompress($content_item->content), true);
-                $meta_data = json_decode($content_item->meta_data, true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('videos', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
 
                 $channel = $yt_parser_channels->saveChannel($content);
 
                 if ($channel) {
-                    $date_day = ! empty($meta_data['date'])
-                        ? new \DateTime($meta_data['date'])
-                        : new \DateTime($content_item->date_created);
-
                     $yt_parser_channels->saveChannelStatDay($channel->id, $date_day, $content);
                 }
 
@@ -267,6 +279,7 @@ class YtParser extends \Common {
             $this->modSources->dataSourcesVideosRaw->select()
                 ->where("type = 'yt_channels_stats'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
@@ -276,12 +289,14 @@ class YtParser extends \Common {
         }
 
         $yt_parser_channels = new YtParser\Channels();
+        $model              = new Model();
 
         foreach ($contents as $content_item) {
             $this->db->beginTransaction();
             try {
-                $content   = json_decode(gzuncompress($content_item->content), true);
-                $meta_data = json_decode($content_item->meta_data, true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('videos', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
 
                 if ( ! empty($content)) {
                     foreach ($content as $channel_stat) {
@@ -290,10 +305,6 @@ class YtParser extends \Common {
                             $channel = $this->modSources->dataSourcesVideos->getRowByYtChannelId($channel_stat['id']);
 
                             if ($channel) {
-                                $date_day = ! empty($meta_data['date'])
-                                    ? new \DateTime($meta_data['date'])
-                                    : new \DateTime($content_item->date_created);
-
                                 $yt_parser_channels->saveChannelStatDay($channel->id, $date_day, $channel_stat);
                             }
                         }

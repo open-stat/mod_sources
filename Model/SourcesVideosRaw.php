@@ -29,20 +29,31 @@ class SourcesVideosRaw extends \Zend_Db_Table_Abstract {
      * @param array  $content
      * @param array  $meta_data
      * @return void
+     * @throws Zend_Config_Exception
      */
     public function saveContent(string $type, array $content, array $meta_data): void {
 
-        $content          = json_encode($content, JSON_UNESCAPED_UNICODE);
-        $content_hash     = md5($content);
-        $content_compress = gzcompress($content, 9);
-        $chat_content     = $this->getRowByTypeHash($type, $content_hash);
+        $content_json = json_encode($content, JSON_UNESCAPED_UNICODE);
+        $content_hash = md5($content_json);
+        $chat_content = $this->getRowByTypeHash($type, $content_hash);
 
         if (empty($chat_content)) {
+            $date             = new \DateTime();
+            $file_name        = "{$type}-{$content_hash}.json";
+            $contents         = json_encode([
+                'type'    => $type,
+                'date'    => $date->format('Y-m-d H:i:s'),
+                'meta'    => $meta_data,
+                'content' => base64_encode(gzcompress($content_json, 9)),
+            ], JSON_UNESCAPED_UNICODE);
+
+            (new \Core2\Mod\Sources\Model())->saveSourceFile('videos', $date, $file_name, $contents);
+
             $chat_content = $this->createRow([
-                'type'      => $type,
-                'content'   => $content_compress,
-                'hash'      => $content_hash,
-                'meta_data' => json_encode($meta_data, JSON_UNESCAPED_UNICODE),
+                'type'         => $type,
+                'hash'         => $content_hash,
+                'meta_data'    => json_encode($meta_data, JSON_UNESCAPED_UNICODE),
+                'date_created' => $date->format('Y-m-d H:i:s'),
             ]);
             $chat_content->save();
         }

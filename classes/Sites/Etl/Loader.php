@@ -34,6 +34,7 @@ class Loader extends \Common {
      * @param array  $content
      * @param array  $options
      * @return void
+     * @throws \Zend_Config_Exception
      */
     public function saveSourceContent(int $source_id, string $url, array $content, array $options = []): void {
 
@@ -41,13 +42,35 @@ class Loader extends \Common {
 
         // todo возможно следует добавлять версию 2..n
         if (empty($content_row)) {
+
+            $date  = new \DateTime();
+            $model = new Sources\Model();
+
+            $section_name = $content['section_name'] ?? null;
+            $domain       = parse_url($url)['host'] ?? null;
+            $hash         = md5($url);
+            $domain       = $domain ? preg_replace('~^www\.~', '', $domain) : null;
+            $contents     = json_encode([
+                'domain'  => $domain,
+                'url'     => $url,
+                'date'    => $date->format('Y-m-d H:i:s'),
+                'section' => $section_name,
+                'meta'    => $options,
+                'content' => base64_encode(gzcompress($content['content'], 9)),
+            ], JSON_UNESCAPED_UNICODE);
+
+            $file_name = "{$domain}-{$hash}.json";
+            $file_path = $model->saveSourceFile('sites', $date, $file_name, $contents);
+
+
             $content_row = $this->modSources->dataSourcesSitesContentsRaw->createRow([
                 'source_id'    => $source_id,
-                'domain'       => parse_url($url)['host'] ?? null,
+                'domain'       => $domain,
                 'url'          => $url,
                 'content_type' => $content['content_type'] ?? 'html',
-                'section_name' => $content['section_name'] ?? null,
-                'content'      => gzcompress($content['content'], 9),
+                'section_name' => $section_name,
+                'file_name'    => $file_name,
+                'file_size'    => filesize($file_path),
                 'options'      => json_encode($options),
             ]);
             $content_row->save();

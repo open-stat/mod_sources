@@ -45,6 +45,7 @@ class SourcesSitesContentsRaw extends \Zend_Db_Table_Abstract {
         $select = $this->select()
             ->where("source_id = ?", $source_id)
             ->where("status = 'pending'")
+            ->where("file_name IS NOT NULL")
             ->limit($limit);
 
         return $this->fetchAll($select);

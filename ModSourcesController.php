@@ -9,7 +9,7 @@ require_once 'classes/autoload.php';
 
 
 /**
- * @property \SourcesSites                  $dataSources
+ * @property \SourcesSites                  $dataSourcesSites
  * @property \SourcesSitesContentsRaw       $dataSourcesSitesContentsRaw
  * @property \SourcesSitesPages             $dataSourcesSitesPages
  * @property \SourcesSitesPagesContents     $dataSourcesSitesPagesContents

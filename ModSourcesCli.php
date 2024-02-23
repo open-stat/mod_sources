@@ -165,6 +165,7 @@ class ModSourcesCli extends Common {
 
         if ($configs) {
             $loader = new Sources\Sites\Etl\Loader();
+            $model  = new Sources\Model();
 
             $this->modSources->dataSourcesSitesContentsRaw->refreshStatusRows();
 
@@ -213,8 +214,11 @@ class ModSourcesCli extends Common {
                                 $page_raw->status = 'process';
                                 $page_raw->save();
 
+                                $file_content = $model->getSourceFile('sites', new \DateTime($page_raw->date_created), $page_raw->file_name);
+                                $content      = gzuncompress(base64_decode($file_content['content']));
+
                                 $site = new Sources\Sites\Site($section);
-                                $page = $site->parsePage($page_raw->url, gzuncompress($page_raw->content));
+                                $page = $site->parsePage($page_raw->url, $content);
 
 
                                 if (empty($page['title']) && ! empty($page_options['title']))               { $page['title'] = $page_options['title']; }
@@ -421,7 +425,7 @@ class ModSourcesCli extends Common {
                         $tg_account->inactiveMethod('getHistory', $ban_seconds);
                     }
 
-                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
+                    $this->sendErrorMessage("Tg аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд: loadTgHistory");
                 }
             }
         }
@@ -506,7 +510,6 @@ class ModSourcesCli extends Common {
 
                     if ( ! empty($updates)) {
                         $this->modSources->dataSourcesChatsContent->saveContent('tg_updates', $updates, [
-                            'date'          => date('Y-m-d H:i:s'),
                             'count_updates' => count($updates),
                         ]);
 
@@ -533,7 +536,7 @@ class ModSourcesCli extends Common {
                         $tg_account->inactiveMethod('getUpdate', $ban_seconds);
                     }
 
-                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
+                    $this->sendErrorMessage("Tg аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд: loadTgUpdates");
                 }
             }
         }
@@ -607,7 +610,6 @@ class ModSourcesCli extends Common {
                     $this->modSources->dataSourcesChatsContent->saveContent('tg_dialogs_info', $dialog, [
                         'peer_id'   => $dialog['id'] ?? null,
                         'peer_name' => $dialog['username'] ?? null,
-                        'date'      => date('Y-m-d H:i:s'),
                     ]);
 
                     $this->apiMetrics->incPrometheus('core2_sources_tg_load', 1, [
@@ -633,7 +635,7 @@ class ModSourcesCli extends Common {
                         $tg_account->inactiveMethod('getDialog', $ban_seconds);
                     }
 
-                    $this->sendErrorMessage("Аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд");
+                    $this->sendErrorMessage("Tg аккаунт {$tg_account->getApiId()} неактивен на {$ban_seconds} секунд: loadTgPeersInfo");
                 }
             }
 
@@ -1072,10 +1074,10 @@ class ModSourcesCli extends Common {
     public function tgTest(): void {
 
         $tg = new Core2\Mod\Sources\Chats\Telegram();
-        $account = $tg->getAccountByApiId(0);
+        $account = $tg->getAccountByApiId(25983009);
 
         echo '<pre>';
-        print_r($account->dialogs->getDialogsId());
+        print_r($account->updates->get(1));
         echo '</pre>';
     }
 
@@ -1090,6 +1092,9 @@ class ModSourcesCli extends Common {
         $yt         = new Sources\Video\YouTube();
         $yt_account = $yt->getAccountByNmbr(2);
 
+        echo '<pre>';
+        print_r($yt_account->getChannelInfoById('UCSVR88l2gs4_RB3jmNyVhzA'));
+        echo '</pre>';
     }
 
 
@@ -1189,7 +1194,6 @@ class ModSourcesCli extends Common {
 
                 if ( ! empty($channel_info)) {
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_info', $channel_info, [
-                        'date'       => date('Y-m-d H:i:s'),
                         'channel_id' => $channel->channel_id,
                         'name'       => $channel->name,
                     ]);
@@ -1272,7 +1276,6 @@ class ModSourcesCli extends Common {
 
                 if ( ! empty($channels_info)) {
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_channels_stats', $channels_info, [
-                        'date'  => date('Y-m-d H:i:s'),
                         'count' => count($channels_info),
                     ]);
 
@@ -1384,7 +1387,6 @@ class ModSourcesCli extends Common {
                     }
 
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_videos', $channel_videos['results'], [
-                        'date'       => date('Y-m-d H:i:s'),
                         'count'      => count($channel_videos['results']),
                         'channel_id' => $channel->channel_id,
                     ]);
@@ -1495,7 +1497,6 @@ class ModSourcesCli extends Common {
                     }
 
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_channel_videos', $channel_videos['results'], [
-                        'date'       => date('Y-m-d H:i:s'),
                         'count'      => count($channel_videos['results']),
                         'channel_id' => $channel->channel_id,
                     ]);
@@ -1579,7 +1580,6 @@ class ModSourcesCli extends Common {
 
                 if ( ! empty($videos)) {
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_videos_info', $videos, [
-                        'date'  => date('Y-m-d H:i:s'),
                         'count' => count($videos),
                     ]);
 
@@ -1658,7 +1658,6 @@ class ModSourcesCli extends Common {
 
                     if ( ! empty($videos)) {
                         $this->modSources->dataSourcesVideosRaw->saveContent('yt_videos_popular', $videos, [
-                            'date'   => date('Y-m-d H:i:s'),
                             'region' => $region,
                             'count'  => count($videos),
                         ]);
@@ -1744,7 +1743,6 @@ class ModSourcesCli extends Common {
 
                 if ( ! empty($video_comments['results'])) {
                     $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_comments', $video_comments['results'], [
-                        'date'     => date('Y-m-d H:i:s'),
                         'count'    => count($video_comments['results']),
                         'video_id' => $video->platform_id,
                     ]);
@@ -1840,7 +1838,6 @@ class ModSourcesCli extends Common {
 
                     if ( ! empty($subtitles)) {
                         $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_subtitles', $subtitles, [
-                            'date'     => date('Y-m-d H:i:s'),
                             'video_id' => $clip->platform_id,
                         ]);
 
@@ -1893,14 +1890,13 @@ class ModSourcesCli extends Common {
     /**
      * YouTube: Получение картинок из видео
      * @return void
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \GuzzleHttp\Exception\GuzzleException|Zend_Db_Table_Exception
      */
     public function loadYtVideoImages(): void {
 
         $video_files = $this->modSources->dataSourcesVideosClipsFiles->fetchAll(
             $this->modSources->dataSourcesVideosClipsFiles->select()
                 ->where("is_load_sw = 'N'")
-                ->where("content IS NULL")
                 ->where("meta_data IS NOT NULL")
                 ->limit(150)
         );
@@ -1910,8 +1906,11 @@ class ModSourcesCli extends Common {
         }
 
         $client = new GuzzleHttp\Client();
+        $model  = new Sources\Model();
 
         foreach ($video_files as $video_file) {
+
+            $clip = $this->modSources->dataSourcesVideosClips->find($video_file->refid)->current();
 
             try {
                 $meta_data = json_decode($video_file->meta_data, true);
@@ -1930,11 +1929,15 @@ class ModSourcesCli extends Common {
 
                     if ($response->getStatusCode() == 200) {
                         $file_content = $response->getBody()->getContents();
+                        $hash         = md5($file_content);
 
-                        $video_file->content  = $file_content;
-                        $video_file->filename = 'img.jpg';
-                        $video_file->filesize = strlen($file_content);
-                        $video_file->hash     = md5($file_content);
+                        $file_name = "yt-{$clip->platform_id}-{$hash}.jpg";
+                        $file_path = $model->saveSourceFile('videos_clips_images', new \DateTime(), $file_name, $file_content);
+
+
+                        $video_file->filename = $file_name;
+                        $video_file->filesize = filesize($file_path);
+                        $video_file->hash     = $hash;
                         $video_file->type     = 'image/jpg';
                         $video_file->fieldid  = 'thumb';
 
@@ -1972,5 +1975,264 @@ class ModSourcesCli extends Common {
         $yt_parser->processVideos(100);
         $yt_parser->processVideosSubtitles(100);
         $yt_parser->processVideosComments(100);
+    }
+
+
+    /**
+     * YouTube: Показ загруженных данных
+     * @param int $content_id
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function viewYtContent(int $content_id): void {
+
+        $row = $this->modSources->dataSourcesVideosRaw->find($content_id)->current();
+
+        if (empty($row)) {
+            throw new \Exception('Данные с таким id не найдены');
+        }
+
+        echo '<pre>';
+        print_r(json_decode(gzuncompress($row->content), true));
+        echo '</pre>';
+
+
+        json_encode([
+            'type'         => $row->type,
+            'meta'         => $row->meta_data,
+            'date_created' => $row->date_created,
+            'content'      => $row->content,
+        ]);
+    }
+
+
+    /**
+     * YouTube: Перенос данных в файлы
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function saveVideosContent(): void {
+
+        echo date('H:i:s') . " load\n";
+
+        $rows = $this->modSources->dataSourcesVideosRaw->fetchAll(
+            $this->modSources->dataSourcesVideosRaw->select()
+                ->where("content != ''")
+                ->limit(100000)
+        );
+
+       echo date('H:i:s') . " load count {$rows->count()}\n";
+
+        $model = new Sources\Model();
+
+        foreach ($rows as $row) {
+
+            $meta = json_decode($row->meta_data, true);
+
+            if ( ! empty($meta['date'])) {
+                unset($meta['date']);
+            }
+
+            $contents = json_encode([
+                'type'    => $row->type,
+                'date'    => $row->date_created,
+                'meta'    => $meta,
+                'content' => base64_encode($row->content),
+            ], JSON_UNESCAPED_UNICODE);
+
+            $file_name = "{$row->type}-{$row->hash}.json";
+            $file_path = $model->saveSourceFile('videos', new \DateTime($row->date_created), $file_name, $contents);
+
+            $row->file_name = $file_name;
+            $row->file_size = filesize($file_path);
+            $row->content   = '';
+            $row->save();
+        }
+    }
+
+
+    /**
+     * YouTube: Перенос картинок в файлы
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function saveVideosFilesContent(): void {
+
+        echo date('H:i:s') . " load\n";
+
+        $rows = $this->modSources->dataSourcesVideosClipsFiles->fetchAll(
+            $this->modSources->dataSourcesVideosClipsFiles->select()
+                ->where("content IS NOT NULL")
+                ->where("is_load_sw = 'Y'")
+                ->limit(3000)
+        );
+
+        echo date('H:i:s') . " load count {$rows->count()}\n";
+
+        $percent_count = floor($rows->count() / 100);
+        $percent       = 1;
+
+        $model = new Sources\Model();
+
+        $i = 1;
+        foreach ($rows as $row) {
+
+            if ($i == $percent_count) {
+                echo date('H:i:s') . " - {$percent}%\n";
+                $percent++;
+                $i = 1;
+            }
+            $i++;
+
+            $clip = $this->modSources->dataSourcesVideosClips->find($row->refid)->current();
+
+            $file_name = "{$clip->type}-{$clip->platform_id}-{$row->hash}.jpg";
+            $file_path = $model->saveSourceFile('videos_clips_images', new \DateTime($clip->date_created), $file_name, $row->content);
+
+            $row->filename = $file_name;
+            $row->filesize = filesize($file_path);
+            $row->content  = null;
+            $row->save();
+        }
+    }
+
+
+    /**
+     * Tg: Перенос данных в файлы
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function saveTgContent(): void {
+
+        echo date('H:i:s') . " load\n";
+
+        $rows = $this->modSources->dataSourcesChatsContent->fetchAll(
+            $this->modSources->dataSourcesChatsContent->select()
+                ->where("content_bin != ''")
+                ->limit(100000)
+        );
+
+        echo date('H:i:s') . " load count {$rows->count()}\n";
+
+
+        $model = new Sources\Model();
+
+        foreach ($rows as $row) {
+            $meta = json_decode($row->meta_data, true);
+
+            if ( ! empty($meta['date'])) {
+                unset($meta['date']);
+
+            } elseif ( ! empty($meta['date_load'])) {
+                unset($meta['date_load']);
+            }
+
+            $contents = json_encode([
+                'type'    => $row->type,
+                'date'    => $row->date_created,
+                'meta'    => $meta,
+                'content' => base64_encode($row->content_bin),
+            ], JSON_UNESCAPED_UNICODE);
+
+            $file_name = "{$row->type}-{$row->hash}.json";
+            $file_path = $model->saveSourceFile('chats', new \DateTime($row->date_created), $file_name, $contents);
+
+            $row->file_name   = $file_name;
+            $row->file_size   = filesize($file_path);
+            $row->content_bin = '';
+            $row->save();
+        }
+    }
+
+
+    /**
+     * Tg: Очистка метаданных в файлах
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function clearTgFiles(): void {
+
+        echo date('H:i:s') . " load\n";
+
+        $rows = $this->modSources->dataSourcesChatsMessagesFiles->fetchAll(
+            $this->modSources->dataSourcesChatsMessagesFiles->select()
+                ->where("meta_data LIKE '%photoStrippedSize%'")
+                ->limit(500000)
+        );
+
+        echo date('H:i:s') . " load count {$rows->count()}\n";
+
+        $percent_count = floor($rows->count() / 100);
+        $percent       = 1;
+        $i             = 1;
+
+        foreach ($rows as $row) {
+
+            if ($i == $percent_count) {
+                echo date('H:i:s') . " - {$percent}%\n";
+                $percent++;
+                $i = 1;
+            }
+            $i++;
+
+            $meta = json_decode($row->meta_data, true);
+            $meta = $this->modSources->dataSourcesChatsMessagesFiles->clearMetaData($meta);
+
+            $row->meta_data = json_encode($meta, JSON_UNESCAPED_UNICODE);
+            $row->save();
+        }
+    }
+
+
+    /**
+     * Сайты: Перенос данных в файлы
+     * @return void
+     * @throws Exception
+     * @no_cron
+     */
+    public function saveSitesContent(): void {
+
+        echo date('H:i:s') . " load\n";
+
+        $rows = $this->modSources->dataSourcesSitesContentsRaw->fetchAll(
+            $this->modSources->dataSourcesSitesContentsRaw->select()
+                ->where("content != ''")
+                ->limit(100000)
+        );
+
+        echo date('H:i:s') . " load count {$rows->count()}\n";
+
+
+        $model = new Sources\Model();
+
+        foreach ($rows as $row) {
+
+            $meta = $row->options ? json_decode($row->options, true) : [];
+
+            $contents = json_encode([
+                'domain'  => $row->domain,
+                'url'     => $row->url,
+                'date'    => $row->date_created,
+                'section' => $row->section_name,
+                'meta'    => $meta,
+                'content' => base64_encode($row->content),
+            ], JSON_UNESCAPED_UNICODE);
+
+            $hash   = md5($row->url);
+            $domain = preg_replace('~^www\.~', '', $row->domain);
+
+            $file_name = "{$domain}-{$hash}.json";
+            $file_path = $model->saveSourceFile('sites', new \DateTime($row->date_created), $file_name, $contents);
+
+            $row->file_name = $file_name;
+            $row->file_size = filesize($file_path);
+            $row->content   = '';
+            $row->save();
+        }
     }
 }

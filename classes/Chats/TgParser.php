@@ -1,6 +1,8 @@
 <?php
 namespace Core2\Mod\Sources\Chats;
 
+use Core2\Mod\Sources\Model;
+
 /**
  * @property \ModSourcesController $modSources
  * @property \ModMetricsApi        $apiMetrics
@@ -19,17 +21,21 @@ class TgParser extends \Common {
             $this->modSources->dataSourcesChatsContent->select()
                 ->where("type = 'tg_history_channel'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
 
         $tg_parser_history = new TgParser\History();
+        $model             = new Model();
 
         foreach ($history as $item) {
 
             $this->db->beginTransaction();
             try {
-                $content = json_decode(gzuncompress($item->content_bin), true);
+                $date_day     = new \DateTime($item->date_created);
+                $file_content = $model->getSourceFile('chats', $date_day, $item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
 
                 if ( ! empty($content['users'])) {
                     foreach ($content['users'] as $user) {
@@ -92,17 +98,21 @@ class TgParser extends \Common {
             $this->modSources->dataSourcesChatsContent->select()
                 ->where("type = 'tg_updates'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
 
         $tg_parser_update = new TgParser\Update();
+        $model            = new Model();
 
         foreach ($contents as $content_item) {
 
             $this->db->beginTransaction();
             try {
-                $content = json_decode(gzuncompress($content_item->content_bin), true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('chats', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
 
                 foreach ($content as $item) {
                     if ( ! empty($item['update']) && ! empty($item['update']['_'])) {
@@ -150,25 +160,24 @@ class TgParser extends \Common {
             $this->modSources->dataSourcesChatsContent->select()
                 ->where("type = 'tg_dialogs_info'")
                 ->where("is_parsed_sw = 'N'")
+                ->where("file_name IS NOT NULL")
                 ->order('id ASC')
                 ->limit($limit)
         );
 
         $tg_parser_chats = new TgParser\Chats();
+        $model           = new Model();
 
         foreach ($contents as $content_item) {
             $this->db->beginTransaction();
             try {
-                $content   = json_decode(gzuncompress($content_item->content_bin), true);
-                $meta_data = json_decode($content_item->meta_data, true);
+                $date_day     = new \DateTime($content_item->date_created);
+                $file_content = $model->getSourceFile('chats', $date_day, $content_item->file_name);
+                $content      = json_decode(gzuncompress(base64_decode($file_content['content'])), true);
 
                 $chat = $tg_parser_chats->saveDialog($content);
 
                 if ($chat) {
-                    $date_day = ! empty($meta_data['date'])
-                        ? new \DateTime($meta_data['date'])
-                        : new \DateTime($content_item->date_created);
-
                     $tg_parser_chats->saveSubscribersDay($chat->id, $date_day, $content);
                 }
 
