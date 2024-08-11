@@ -44,12 +44,13 @@ class Channels extends Common {
      * @param int       $channel_id
      * @param \DateTime $day
      * @param array     $content
-     * @return \Zend_Db_Table_Row_Abstract|null
+     * @return void
+     * @throws \Exception
      */
-    public function saveChannelStatDay(int $channel_id, \DateTime $day, array $content):? \Zend_Db_Table_Row_Abstract {
+    public function saveChannelStatDay(int $channel_id, \DateTime $day, array $content): void {
 
         if (empty($content['id']) || empty($content['statistics'])) {
-            return null;
+            return;
         }
 
         $statistics = $content['statistics'];
@@ -58,7 +59,7 @@ class Channels extends Common {
             'subscribers_count' => ! empty($statistics['subscriberCount']) ? $statistics['subscriberCount'] : null,
         ]);
 
-        return $this->modSources->dataSourcesVideosStats->save($channel_id, $day, [
+        $this->modSources->dataSourcesVideosStats->save($channel_id, $day, [
             'subscribers_count' => ! empty($statistics['subscriberCount']) ? $statistics['subscriberCount'] : null,
             'view_count'        => ! empty($statistics['viewCount']) ? $statistics['viewCount'] : null,
             'video_count'       => ! empty($statistics['videoCount']) ? $statistics['videoCount'] : null,

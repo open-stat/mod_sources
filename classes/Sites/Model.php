@@ -8,7 +8,6 @@ class Model {
 
     /**
      * @return array
-     * @throws \Zend_Config_Exception
      */
     public function getConfigs(): array {
 
@@ -24,8 +23,8 @@ class Model {
                     $name = substr($item->getFilename(), 0, -4);
 
                     try {
-                        $config = new \Zend_Config_Ini($item->getPathname());
-                        $config->readOnly();
+                        $config = new \Core2\Config();
+                        $config->readIni($item->getPathname());
 
                         if (isset($configs[$name])) {
                             $configs[$name . '_' . crc32($item->getPathname())] = $config;

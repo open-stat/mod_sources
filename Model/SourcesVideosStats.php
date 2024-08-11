@@ -27,23 +27,29 @@ class SourcesVideosStats extends \Zend_Db_Table_Abstract {
      * @param int      $channel_id
      * @param DateTime $date_day
      * @param array    $stat
-     * @return Zend_Db_Table_Row_Abstract
+     * @return void
+     * @throws Exception
      */
-    public function save(int $channel_id, \DateTime $date_day, array $stat): \Zend_Db_Table_Row_Abstract {
+    public function save(int $channel_id, \DateTime $date_day, array $stat): void {
 
-        $chat_day = $this->getRowByChannelIdDay($channel_id, $date_day);
+        $channel_day = $this->getRowByChannelIdDay($channel_id, $date_day);
 
-        if (empty($chat_day)) {
-            $chat_day = $this->createRow([
-                'channel_id'        => $channel_id,
-                'date_day'          => $date_day->format('Y-m-d'),
-                'subscribers_count' => $stat['subscribers_count'] ?? null,
-                'view_count'        => $stat['view_count'] ?? null,
-                'video_count'       => $stat['video_count'] ?? null,
-            ]);
-            $chat_day->save();
+        if (empty($channel_day)) {
+            try {
+                $channel_day = $this->createRow([
+                    'channel_id'        => $channel_id,
+                    'date_day'          => $date_day->format('Y-m-d'),
+                    'subscribers_count' => $stat['subscribers_count'] ?? null,
+                    'view_count'        => $stat['view_count'] ?? null,
+                    'video_count'       => $stat['video_count'] ?? null,
+                ]);
+                $channel_day->save();
+
+            } catch (\Zend_Db_Exception $e) {
+                if ($e->getPrevious()->getCode() != 23000) {
+                    throw $e;
+                }
+            }
         }
-
-        return $chat_day;
     }
 }

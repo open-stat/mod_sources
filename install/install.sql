@@ -6,7 +6,7 @@ CREATE TABLE `mod_sources_sites` (
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `date_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_tags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -15,7 +15,7 @@ CREATE TABLE `mod_sources_sites_tags` (
     PRIMARY KEY (`id`),
     KEY `tag` (`tag`),
     KEY `type` (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_pages` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -34,7 +34,7 @@ CREATE TABLE `mod_sources_sites_pages` (
     KEY `source_id` (`source_id`),
     FULLTEXT KEY `ft1` (`title`),
     CONSTRAINT `fk1_mod_sources_sites_pages` FOREIGN KEY (`source_id`) REFERENCES `mod_sources_sites` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_pages_tags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -46,7 +46,7 @@ CREATE TABLE `mod_sources_sites_pages_tags` (
     KEY `tag_id` (`tag_id`),
     CONSTRAINT `fk1_mod_sources_sites_pages_tags` FOREIGN KEY (`page_id`) REFERENCES `mod_sources_sites_pages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk2_mod_sources_sites_pages_tags` FOREIGN KEY (`tag_id`) REFERENCES `mod_sources_sites_tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_pages_contents` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -59,7 +59,7 @@ CREATE TABLE `mod_sources_sites_pages_contents` (
     KEY `page_id` (`page_id`),
     FULLTEXT KEY `ft1` (`content`),
     CONSTRAINT `fk1_mod_sources_sites_pages_contents` FOREIGN KEY (`page_id`) REFERENCES `mod_sources_sites_pages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_pages_media` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -72,7 +72,7 @@ CREATE TABLE `mod_sources_sites_pages_media` (
     PRIMARY KEY (`id`),
     KEY `page_id` (`page_id`),
     CONSTRAINT `fk1_mod_sources_sites_pages_media` FOREIGN KEY (`page_id`) REFERENCES `mod_sources_sites_pages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_pages_references` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -84,14 +84,14 @@ CREATE TABLE `mod_sources_sites_pages_references` (
     PRIMARY KEY (`id`),
     KEY `page_id` (`page_id`),
     CONSTRAINT `fk1_mod_sources_sites_pages_references` FOREIGN KEY (`page_id`) REFERENCES `mod_sources_sites_pages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `mod_sources_sites_contents_raw` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `source_id` int unsigned NOT NULL,
-    `domain` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL,
-    `url` varchar(300) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-    `status` enum('pending','process','complete','error') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'pending',
+    `domain` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL,
+    `url` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `status` enum('pending','process','complete','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
     `content_type` enum('html','json','text') COLLATE utf8mb4_general_ci DEFAULT 'html',
     `file_name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
     `file_size` int DEFAULT NULL,
@@ -568,7 +568,7 @@ CREATE TABLE `mod_sources_videos_clips_comments` (
 CREATE TABLE `mod_sources_videos_clips_subtitles` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `clip_id` int unsigned NOT NULL,
-    `lang` varchar(50) DEFAULT NULL,
+    `lang` varchar(255) DEFAULT NULL,
     `content` longtext,
     `content_time` json DEFAULT NULL,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,

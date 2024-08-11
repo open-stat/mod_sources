@@ -47,11 +47,14 @@ class SourcesVideosRaw extends \Zend_Db_Table_Abstract {
                 'content' => base64_encode(gzcompress($content_json, 9)),
             ], JSON_UNESCAPED_UNICODE);
 
-            (new \Core2\Mod\Sources\Model())->saveSourceFile('videos', $date, $file_name, $contents);
+            $file_path = (new \Core2\Mod\Sources\Model())
+                ->saveSourceFile('videos', $date, $file_name, $contents);
 
             $chat_content = $this->createRow([
                 'type'         => $type,
                 'hash'         => $content_hash,
+                'file_name'    => $file_name,
+                'file_size'    => filesize($file_path),
                 'meta_data'    => json_encode($meta_data, JSON_UNESCAPED_UNICODE),
                 'date_created' => $date->format('Y-m-d H:i:s'),
             ]);

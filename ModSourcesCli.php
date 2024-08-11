@@ -1564,10 +1564,13 @@ class ModSourcesCli extends Common {
                 SELECT svc.id,
                        svc.platform_id
                 FROM mod_sources_videos_clips AS svc
-                    JOIN mod_sources_videos AS sv ON sv.id = svc.channel_id
                 WHERE svc.type = 'yt'
-                  AND sv.is_connect_sw = 'Y'
                   AND svc.is_load_info_sw = 'N'
+                  AND (SELECT 1
+                       FROM mod_sources_videos AS sv
+                       WHERE sv.id = svc.channel_id
+                         AND sv.is_connect_sw = 'Y'
+                       LIMIT 1) IS NOT NULL 
                 LIMIT 50
             ");
 
@@ -1723,12 +1726,15 @@ class ModSourcesCli extends Common {
             $video_id = $this->db->fetchOne("
                 SELECT svc.id
                 FROM mod_sources_videos_clips AS svc
-                    JOIN mod_sources_videos AS sv ON sv.id = svc.channel_id
                 WHERE svc.type = 'yt'
-                  AND sv.is_connect_sw = 'Y'
-                  AND svc.is_load_comments_sw = 'N' 
+                  AND svc.is_load_comments_sw = 'N'
                   AND (DATE_ADD(svc.date_platform_created, INTERVAL 7 DAY) < NOW() OR 
                        DATE_ADD(svc.date_created, INTERVAL 7 DAY) < NOW())
+                  AND (SELECT 1
+                       FROM mod_sources_videos AS sv
+                       WHERE sv.id = svc.channel_id
+                         AND sv.is_connect_sw = 'Y'
+                       LIMIT 1) IS NOT NULL 
                 ORDER BY svc.viewed_count DESC
                 LIMIT 1
             ");
@@ -1965,16 +1971,18 @@ class ModSourcesCli extends Common {
     /**
      * YouTube: Обработка загруженных данных
      * @return void
+     * @throws Zend_Exception
+     * @throws Exception
      */
     public function parseYtContent(): void {
 
         $yt_parser = new Sources\Video\YtParser();
 
-        $yt_parser->processChannelInfo(100);
-        $yt_parser->processChannelStats(100);
-        $yt_parser->processVideos(100);
-        $yt_parser->processVideosSubtitles(100);
-        $yt_parser->processVideosComments(100);
+        $yt_parser->processChannelInfo(1000);
+        $yt_parser->processChannelStats(1000);
+        $yt_parser->processVideos(1000);
+        $yt_parser->processVideosSubtitles(1000);
+        $yt_parser->processVideosComments(1000);
     }
 
 
