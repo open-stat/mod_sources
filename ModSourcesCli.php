@@ -1836,6 +1836,7 @@ class ModSourcesCli extends Common {
                 return;
             }
 
+            $errors = [];
 
             foreach ($clips as $clip) {
 
@@ -1843,7 +1844,7 @@ class ModSourcesCli extends Common {
                     $subtitles = $yt_account->getVideoSubtitles($clip->platform_id);
 
                     if ( ! empty($subtitles)) {
-                        $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_subtitles', $subtitles, [
+                        $this->modSources->dataSourcesVideosRaw->saveContent('yt_video_subtitles_2', $subtitles, [
                             'video_id' => $clip->platform_id,
                         ]);
 
@@ -1853,6 +1854,9 @@ class ModSourcesCli extends Common {
                             'instance' => $_SERVER['SERVER_NAME'] ?? 'production',
                         ]);
                     }
+
+                    $clip->is_load_subtitles_sw = 'Y';
+                    $clip->save();
 
                 } catch (\Exception $e) {
                     echo "Video ID: {$clip->id}" .PHP_EOL;
@@ -1882,12 +1886,17 @@ class ModSourcesCli extends Common {
                     } elseif ( ! str_contains($e->getMessage(), '404 Not Found') &&
                                ! str_contains($e->getMessage(), '403 Forbidden')
                     ) {
-                        $this->sendErrorMessage('Неизвестная ошибка при получении субтитров к видео', $e);
+                        $errors[] = [
+                            'clip_id' => $clip->id,
+                            'message' => $e->getMessage(),
+                            'trace'   => explode("\n", $e->getTraceAsString()),
+                        ];
                     }
                 }
+            }
 
-                $clip->is_load_subtitles_sw = 'Y';
-                $clip->save();
+            if ( ! empty($errors)) {
+                $this->sendErrorMessage('Неизвестная ошибка при получении субтитров к видео', $errors);
             }
         }
     }

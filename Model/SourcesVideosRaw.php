@@ -29,7 +29,6 @@ class SourcesVideosRaw extends \Zend_Db_Table_Abstract {
      * @param array  $content
      * @param array  $meta_data
      * @return void
-     * @throws Zend_Config_Exception
      */
     public function saveContent(string $type, array $content, array $meta_data): void {
 

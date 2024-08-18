@@ -6,6 +6,7 @@
     "danog/madelineproto": "8.0.0-beta164",
     "alaouy/youtube": "v2.2.5",
     "guzzlehttp/guzzle": "7.*",
-    "ext-zlib": "*"
+    "ext-zlib": "*",
+    "ext-dom": "*"
   }
 }
