@@ -7,7 +7,7 @@ namespace Core2\Mod\Sources\Sites;
 class Model {
 
     /**
-     * @return array
+     * @return \Laminas\Config\Config[]
      */
     public function getConfigs(): array {
 
@@ -23,8 +23,12 @@ class Model {
                     $name = substr($item->getFilename(), 0, -4);
 
                     try {
-                        $config = new \Core2\Config();
-                        $config->readIni($item->getPathname());
+                        $reader = new \Laminas\Config\Reader\Ini();
+                        $reader->setProcessSections(true);
+                        $reader->setNestSeparator('.');
+                        $data = $reader->fromFile($item->getPathname());
+
+                        $config = new \Laminas\Config\Config($data);
 
                         if (isset($configs[$name])) {
                             $configs[$name . '_' . crc32($item->getPathname())] = $config;

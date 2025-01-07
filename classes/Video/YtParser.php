@@ -116,6 +116,8 @@ class YtParser extends \Common {
                 $yt_parser_clips = new YtParser\Clips();
                 $model           = new Model();
 
+                //$model->setSourceDir('/mnt/source');
+
                 try {
                     $date_day     = new \DateTime($content_item->date_created);
                     $file_content = $model->getSourceFile('videos', $date_day, $content_item->file_name);

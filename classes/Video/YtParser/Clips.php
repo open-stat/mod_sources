@@ -105,14 +105,7 @@ class Clips extends Common {
         }
 
         if ( ! empty($subtitles_clean)) {
-            $content = [];
-
-            foreach ($subtitles_clean['items'] as $item) {
-                $content[] = $item['text'];
-            }
-
             $this->modSources->dataSourcesVideosClipsSubtitles->save($clip_id, $subtitles_clean['lang'], [
-                'content'      => implode(' ', $content),
                 'content_time' => $subtitles_clean['items'],
             ]);
         }
@@ -367,6 +360,8 @@ class Clips extends Common {
         $content = $snippet['textOriginal'] ?? null;
 
         if ($content) {
+            $content = mb_substr($content, 0, 5000);
+
             $this->saveHashtags($clip_id, $content);
             $this->saveLinks($clip_id, $content);
             $this->saveChannelsVideos($content);

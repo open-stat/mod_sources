@@ -1,5 +1,6 @@
 <?php
 use Core2\Mod\Sources;
+use Core2\Mod\Sources\Model;
 
 require_once DOC_ROOT . 'core2/inc/classes/Common.php';
 require_once "classes/autoload.php";
@@ -2010,16 +2011,129 @@ class ModSourcesCli extends Common {
             throw new \Exception('Данные с таким id не найдены');
         }
 
+        $model           = new Model();
+        $date_day     = new \DateTime($row->date_created);
+        $file_content = $model->getSourceFile('videos', $date_day, $row->file_name);
+
         echo '<pre>';
-        print_r(json_decode(gzuncompress($row->content), true));
-        echo '</pre>';
+        print_r($file_content['meta']);
+        print_r(json_decode(gzuncompress(base64_decode($file_content['content'])), true));
+        echo '</pre>';;
+    }
 
 
-        json_encode([
-            'type'         => $row->type,
-            'meta'         => $row->meta_data,
-            'date_created' => $row->date_created,
-            'content'      => $row->content,
-        ]);
+    /**
+     * Копирование данных из одной таблицы в другую (Сервисный метод)
+     * @param string $table_from
+     * @param string $table_to
+     * @return void
+     */
+    public function copyTable(string $table_from = 'mod_sources_videos_users', string $table_to = 'mod_sources_videos_users2'): void {
+
+        $table_from_quote = $this->db->quoteIdentifier($table_from, true);
+        $table_to_quote   = $this->db->quoteIdentifier($table_to, true);
+        $count_rows       = 100000;
+        $success_insert   = 0;
+
+        $max_id = $this->db->fetchOne("SELECT MAX(id) FROM {$table_from_quote}");
+
+
+        for ($start_id = 1; $start_id <= $max_id; $start_id += $count_rows) {
+
+            $end_id = $start_id + $count_rows;
+
+            try {
+                $stmt = $this->db->query("
+                    insert ignore into {$table_to_quote} 
+                    select * from {$table_from_quote} WHERE id >= ? and id <= ?
+                ", [
+                    $start_id,
+                    $end_id
+                ]);
+
+                $success_insert += $stmt->rowCount();
+
+                echo "Range id {$start_id} - {$end_id} / Copy rows - {$success_insert}\n";
+
+            } catch (\Exception $e) {
+                $this->db->closeConnection();
+                echo "Error range id {$start_id} - {$end_id}: " . $e->getMessage() . "\n";
+                sleep(5);
+
+                // Если не удалось, то копируем построчно
+                for ($id = $start_id; $id <= $end_id; $id++) {
+                    if ($id >= 3483168 && $id <= 3483422) {
+                        continue;
+                    }
+                    try {
+                        $row = $this->db->fetchRow("SELECT * FROM {$table_from_quote} WHERE id = ?", $id);
+
+                        if ($row) {
+                            $success_insert += $this->insertIgnore($table_to, $row);
+                        }
+
+                    } catch (\Exception $e) {
+                        $this->db->closeConnection();
+                        echo "Error row id - {$id}: " . $e->getMessage() . "\n";
+                        sleep(5);
+                    }
+                }
+            }
+        }
+
+        echo "Copy rows - {$success_insert}";
+    }
+
+
+    /**
+     * @param string $table
+     * @param array  $bind
+     * @return int
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function insertIgnore(string $table, array $bind) {
+
+        // extract and quote col names from the array keys
+        $cols = [];
+        $vals = [];
+        $i    = 0;
+        foreach ($bind as $col => $val) {
+            $cols[] = $this->db->quoteIdentifier($col, true);
+            if ($val instanceof Zend_Db_Expr) {
+                $vals[] = $val->__toString();
+                unset($bind[$col]);
+            } else {
+                if ($this->db->supportsParameters('positional')) {
+                    $vals[] = '?';
+                } else {
+                    if ($this->db->supportsParameters('named')) {
+                        unset($bind[$col]);
+                        $bind[':col' . $i] = $val;
+                        $vals[]            = ':col' . $i;
+                        $i++;
+                    } else {
+                        /** @see Zend_Db_Adapter_Exception */
+                        // require_once 'Zend/Db/Adapter/Exception.php';
+                        throw new Zend_Db_Adapter_Exception(get_class($this) . " doesn't support positional or named binding");
+                    }
+                }
+            }
+        }
+
+        // build the statement
+        $sql = "INSERT IGNORE INTO "
+               . $this->db->quoteIdentifier($table, true)
+               . ' (' . implode(', ', $cols) . ') '
+               . 'VALUES (' . implode(', ', $vals) . ')';
+
+        // execute the statement and return the number of affected rows
+        if ($this->db->supportsParameters('positional')) {
+            $bind = array_values($bind);
+        }
+
+        $stmt   = $this->db->query($sql, $bind);
+        $result = $stmt->rowCount();
+        return $result;
     }
 }

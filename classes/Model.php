@@ -65,6 +65,17 @@ class Model extends \Common {
 
 
     /**
+     * Установка директории с источниками
+     * @param string $dir
+     * @return void
+     */
+    public function setSourceDir(string $dir): void {
+
+        self::$sources_dir = $dir;
+    }
+
+
+    /**
      * @param string         $source_name
      * @param \DateTime|null $date
      * @return string

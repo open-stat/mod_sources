@@ -37,7 +37,6 @@ class SourcesVideosClipsSubtitles extends \Zend_Db_Table_Abstract {
             $clip_subtitles = $this->createRow([
                 'clip_id'      => $clip_id,
                 'lang'         => $lang,
-                'content'      => $options['content'] ?? null,
                 'content_time' => ! empty($options['content_time']) ? json_encode($options['content_time']) : null,
             ]);
             $clip_subtitles->save();

@@ -451,9 +451,9 @@ CREATE TABLE `mod_sources_videos_links` (
 
 CREATE TABLE `mod_sources_videos_users` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `name` varchar(255) DEFAULT NULL,
+    `name` varchar(200) DEFAULT NULL,
     `type` varchar(20) NOT NULL,
-    `platform_id` varchar(255) DEFAULT NULL,
+    `platform_id` varchar(200) DEFAULT NULL,
     `profile_url` varchar(500) DEFAULT NULL,
     `profile_avatar_url` varchar(500) DEFAULT NULL,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -461,7 +461,7 @@ CREATE TABLE `mod_sources_videos_users` (
     PRIMARY KEY (`id`),
     KEY `name` (`name`),
     KEY `platform_id` (`platform_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `mod_sources_videos_hashtags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -548,11 +548,11 @@ CREATE TABLE `mod_sources_videos_clips_comments` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `clip_id` int unsigned NOT NULL,
     `user_id` int unsigned DEFAULT NULL,
-    `platform_id` varchar(255) NOT NULL,
-    `reply_to_id` varchar(255) DEFAULT NULL,
+    `platform_id` varchar(200) COLLATE utf8mb4_general_ci NOT NULL,
+    `reply_to_id` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
     `likes_count` int unsigned DEFAULT NULL,
     `dislike_count` int unsigned DEFAULT NULL,
-    `content` text,
+    `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
     `date_platform_created` timestamp NULL DEFAULT NULL,
     `date_platform_modify` timestamp NULL DEFAULT NULL,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -560,23 +560,18 @@ CREATE TABLE `mod_sources_videos_clips_comments` (
     PRIMARY KEY (`id`),
     KEY `clip_id` (`clip_id`),
     KEY `platform_id` (`platform_id`),
-    KEY `user_id` (`user_id`),
-    CONSTRAINT `fk1_mod_sources_videos_clips_comments` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk2_mod_sources_videos_clips_comments` FOREIGN KEY (`user_id`) REFERENCES `mod_sources_videos_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    KEY `user_id` (`user_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `mod_sources_videos_clips_subtitles` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `clip_id` int unsigned NOT NULL,
     `lang` varchar(255) DEFAULT NULL,
-    `content` longtext,
-    `content_time` json DEFAULT NULL,
+    `content_time` longtext,
     `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-    `date_modify` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `clip_id` (`clip_id`),
-    CONSTRAINT `fk1_mod_sources_videos_clips_subtitles` FOREIGN KEY (`clip_id`) REFERENCES `mod_sources_videos_clips` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    KEY `clip_id` (`clip_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `mod_sources_videos_clips_hashtags` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
